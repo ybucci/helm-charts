@@ -33,3 +33,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: {{ .Values.externaldnsOperator.rbac.serviceAccountName }}
+    namespace: {{ .Release.Namespace }}
