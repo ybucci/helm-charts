@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.appname }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.appname }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appname }}
+    spec:
+      serviceAccountName: {{ .Values.appname }}
+      containers:
+        - name: operator
+          image: "{{ .Values.externaldnsOperator.image.repository }}:{{ .Values.externaldnsOperator.image.tag }}"
+          imagePullPolicy: {{ .Values.externaldnsOperator.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.externaldnsOperator.configMapName }}
+          resources:
+            requests:
+              memory: "{{ .Values.externaldnsOperator.resources.requests.memory }}"
+              cpu: "{{ .Values.externaldnsOperator.resources.requests.cpu }}"
+            limits:
+              memory: "{{ .Values.externaldnsOperator.resources.limits.memory }}"
+              cpu: "{{ .Values.externaldnsOperator.resources.limits.cpu }}"
+          ports:
+            - containerPort: 8080
+              name: health
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      nodeSelector:
+        {{- toYaml .Values.externaldnsOperator.nodeSelector | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.externaldnsOperator.tolerations | nindent 8 }}

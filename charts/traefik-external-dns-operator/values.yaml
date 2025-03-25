@@ -1,0 +1,28 @@
+namespace: addons
+
+appname: traefik-dns-operator
+
+externaldnsOperator:
+  configMapName: traefik-dns-operator
+  image:
+    repository: ybucci/traefik-external-dns-operator
+    tag: 1.0.0
+    pullPolicy: Always
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "10m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+  nodeSelector:
+    addons: "enabled"
+  tolerations:
+    - key: "addons"
+      operator: "Equal"
+      value: "enabled"
+      effect: "NoSchedule"
+  monitorServiceRef: "traefik/traefik" # namespace/service
+  rbac:
+    clusterRoleName: traefik-dns-operator
+    serviceAccountName: traefik-dns-operator
