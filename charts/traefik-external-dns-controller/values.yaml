@@ -96,7 +96,6 @@ rbac:
   annotations: {}
 
 # Pod disruption budget
-# Note: Since we run only 1 replica, PDB is not recommended as it would prevent updates
 podDisruptionBudget:
   enabled: false
   minAvailable: 1
@@ -134,14 +133,9 @@ commonAnnotations: {}
 # Image pull secrets
 imagePullSecrets: []
 
-# Number of replicas
-# IMPORTANT: This controller does not support multiple replicas due to lack of leader election.
-# Multiple replicas would cause race conditions and duplicate processing.
-# Keep this value at 1 for proper operation.
-replicaCount: 1
+# Number of replicas is fixed at 1 in the deployment template
 
 # Deployment strategy
-# Since we run only 1 replica, use Recreate to avoid issues during updates
 strategy:
   type: Recreate
 

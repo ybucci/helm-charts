@@ -1,6 +1,3 @@
-{{- if gt (.Values.replicaCount | int) 1 }}
-{{- fail "ERROR: replicaCount must be 1. This controller does not support multiple replicas due to lack of leader election. Multiple replicas would cause race conditions and duplicate processing." }}
-{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -22,8 +19,8 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  # IMPORTANT: This controller only supports 1 replica
-  replicas: {{ .Values.replicaCount }}
+  # This controller runs with exactly 1 replica
+  replicas: 1
   selector:
     matchLabels:
       {{- include "traefik-external-dns-controller.selectorLabels" . | nindent 6 }}

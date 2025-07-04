@@ -117,10 +117,6 @@ def parse_service_config():
 def configure(settings: kopf.OperatorSettings, **_):
     global service_configs
     
-    # IMPORTANT: This controller does not support multiple replicas.
-    # Leader election is disabled to simplify the implementation.
-    # Running multiple replicas would cause race conditions and duplicate processing.
-    # Deploy with replicaCount: 1 only.
     settings.persistence.finalizer = None
     settings.watching.clusterwide = True
     settings.posting.enabled = False
