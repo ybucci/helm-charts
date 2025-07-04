@@ -430,4 +430,17 @@ def start_service_watch(**_):
     
     logger.debug("Starting health check server in background thread")
     health_thread = threading.Thread(target=start_health_server, daemon=True)
-    health_thread.start() 
+    health_thread.start()
+    
+    # Keep the main thread alive to prevent the process from exiting
+    logger.info("Controller startup complete, entering main loop")
+    try:
+        # This keeps the main thread alive
+        while True:
+            time.sleep(60)
+            logger.debug("Controller main thread heartbeat")
+    except KeyboardInterrupt:
+        logger.info("Controller shutting down gracefully")
+    except Exception as e:
+        logger.error(f"Error in main thread: {str(e)}")
+        raise
