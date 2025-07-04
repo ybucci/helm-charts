@@ -16,4 +16,20 @@
 * **Notes/Observations:** Created documentation/manifest.md to track development progress according to the Git-powered memory methodology. This establishes the foundation for future checkpoint tracking.
 * **AI Interaction**:
     * **My Prompt to AI:** "Faça os commits necessários e o push"
-    * **AI Action/Result:** "Created manifest.md file, committed changes, and pushed both commits to origin/main successfully" 
+    * **AI Action/Result:** "Created manifest.md file, committed changes, and pushed both commits to origin/main successfully"
+
+### Checkpoint: 2f42f8b - Manifest Updated
+* **GIT SHA:** `2f42f8b`
+* **Commit Message:** `DOCS: Updated manifest with second checkpoint documentation`
+* **Notes/Observations:** Updated manifest.md with complete checkpoint documentation for the API version update process.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Faça os commits necessários e o push"
+    * **AI Action/Result:** "Updated manifest with checkpoint documentation and pushed to origin/main"
+
+### Checkpoint: Build Complete - Docker Image v2.0.0 Built and Pushed
+* **GIT SHA:** `[pending]`
+* **Commit Message:** `[pending]`
+* **Notes/Observations:** Successfully built and pushed Docker image v2.0.0 with the new Traefik API version. Image includes all API updates and is ready for deployment. Built both versioned (2.0.0) and latest tags.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Agora faça o build e push da nova versão"
+    * **AI Action/Result:** "Built Docker image ybucci/traefik-external-dns-controller:2.0.0 and pushed to DockerHub with both 2.0.0 and latest tags" 
