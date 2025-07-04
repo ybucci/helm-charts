@@ -72,4 +72,12 @@
 * **Notes/Observations:** Updated the Helm chart version to 2.0.2 to reflect the probe configuration fix. The appVersion remains at 2.0.1 since the container image hasn't changed.
 * **AI Interaction**:
     * **My Prompt to AI:** "Mude a versão do helm chart por favor e faça o push"
-    * **AI Action/Result:** "Updated Chart.yaml to version 2.0.2 while keeping appVersion at 2.0.1" 
+    * **AI Action/Result:** "Updated Chart.yaml to version 2.0.2 while keeping appVersion at 2.0.1"
+
+### Checkpoint: 1f9bdd6 - Controller Fix for CrashLoopBackOff
+* **GIT SHA:** `1f9bdd6c8a6d2728c8e285e404229485e345fff0`
+* **Commit Message:** `FIX: Added main thread keep-alive loop to prevent controller from exiting`
+* **Notes/Observations:** Fixed the CrashLoopBackOff issue with the controller by adding a main thread keep-alive loop. The controller was exiting immediately after startup because the main thread was completing its execution. Added a continuous loop in the main thread to keep the process running.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Está com algum erro, por favor tente identificar o que está ocorrendo"
+    * **AI Action/Result:** "Identified that the controller was exiting immediately after startup and added a main thread keep-alive loop to prevent it from exiting" 
