@@ -120,4 +120,12 @@
 * **Notes/Observations:** Changed approach by modifying the Dockerfile to run as root user instead of creating a non-root user. This completely avoids the user detection issue that Kopf was encountering. Removed user creation code and set KOPF_IDENTITY environment variable in the Dockerfile. Local testing confirmed the fix works - no more user detection errors. Updated to image version 2.0.5 and chart version 2.0.7.
 * **AI Interaction**:
     * **My Prompt to AI:** "Ainda contiua com erro, consegue tentar mudar a abordagem talvez do dockerfile"
-    * **AI Action/Result:** "Modified Dockerfile to run as root, removed user creation code, added KOPF_IDENTITY environment variable, built and pushed version 2.0.5, and updated chart to version 2.0.7. Local testing showed the user detection error was resolved." 
+    * **AI Action/Result:** "Modified Dockerfile to run as root, removed user creation code, added KOPF_IDENTITY environment variable, built and pushed version 2.0.5, and updated chart to version 2.0.7. Local testing showed the user detection error was resolved."
+
+### Checkpoint: 30ab4f2 - Values.yaml Configuration Fix
+* **GIT SHA:** `30ab4f2`
+* **Commit Message:** `AI: Fixed - Updated values.yaml with correct image tag and root security context`
+* **Notes/Observations:** Fixed the root cause of why the deployment was still using the old image - the values.yaml file still had tag "2.0.4" instead of "2.0.5". Also updated the security context to match the root user approach: changed runAsNonRoot to false, runAsUser to 0, runAsGroup to 0, and fsGroup to 0. Updated chart version to 2.0.8. This should finally resolve the deployment issue.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Acho que vc não alterou o valor default do values"
+    * **AI Action/Result:** "Identified that values.yaml still had the old image tag 2.0.4 and conflicting security context settings. Updated image tag to 2.0.5, changed security context to run as root (user 0), and updated chart to version 2.0.8." 
