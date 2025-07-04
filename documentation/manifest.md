@@ -80,4 +80,12 @@
 * **Notes/Observations:** Fixed the CrashLoopBackOff issue with the controller by adding a main thread keep-alive loop. The controller was exiting immediately after startup because the main thread was completing its execution. Added a continuous loop in the main thread to keep the process running.
 * **AI Interaction**:
     * **My Prompt to AI:** "Está com algum erro, por favor tente identificar o que está ocorrendo"
-    * **AI Action/Result:** "Identified that the controller was exiting immediately after startup and added a main thread keep-alive loop to prevent it from exiting" 
+    * **AI Action/Result:** "Identified that the controller was exiting immediately after startup and added a main thread keep-alive loop to prevent it from exiting"
+
+### Checkpoint: 28f5e97 - Version Update for Controller Fix
+* **GIT SHA:** `28f5e97`
+* **Commit Message:** `CHORE: Bumped chart version to 2.0.3 and appVersion to 2.0.2`
+* **Notes/Observations:** Updated the Helm chart version to 2.0.3 and appVersion to 2.0.2 to reflect the controller fix. Built and pushed the new Docker image with the fixed controller code.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Ajustei mas continua com o mesmo problema"
+    * **AI Action/Result:** "Fixed the controller code, built a new Docker image version 2.0.2, and updated the Helm chart to version 2.0.3" 
