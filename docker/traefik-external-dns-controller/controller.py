@@ -117,6 +117,8 @@ def parse_service_config():
 def configure(settings: kopf.OperatorSettings, **_):
     global service_configs
     
+    logger.info("Controller startup initiated")
+    
     settings.persistence.finalizer = None
     settings.watching.clusterwide = True
     settings.posting.enabled = False
@@ -424,23 +426,26 @@ def start_health_server():
 
 @kopf.on.startup()
 def start_service_watch(**_):
-    logger.debug("Starting service watch in background thread")
+    logger.info("Starting service watch in background thread")
     watch_thread = threading.Thread(target=watch_service, daemon=True)
     watch_thread.start()
     
-    logger.debug("Starting health check server in background thread")
+    logger.info("Starting health check server in background thread")
     health_thread = threading.Thread(target=start_health_server, daemon=True)
     health_thread.start()
+
+def main():
+    """Main entry point for the controller."""
+    logger.info("Traefik External DNS Controller starting...")
     
-    # Keep the main thread alive to prevent the process from exiting
-    logger.info("Controller startup complete, entering main loop")
+    # Run the kopf operator
     try:
-        # This keeps the main thread alive
-        while True:
-            time.sleep(60)
-            logger.debug("Controller main thread heartbeat")
+        kopf.run()
     except KeyboardInterrupt:
         logger.info("Controller shutting down gracefully")
     except Exception as e:
-        logger.error(f"Error in main thread: {str(e)}")
+        logger.error(f"Error running controller: {str(e)}")
         raise
+
+if __name__ == "__main__":
+    main()

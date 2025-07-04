@@ -2,8 +2,8 @@ apiVersion: v2
 name: traefik-external-dns-controller
 description: A Helm chart for Traefik External DNS Controller - Monitors multiple Traefik LoadBalancer services with dynamic configuration and updates external-dns annotations on IngressRoutes
 type: application
-version: 2.0.3
-appVersion: "2.0.2"
+version: 2.0.4
+appVersion: "2.0.3"
 keywords:
   - traefik
   - external-dns
