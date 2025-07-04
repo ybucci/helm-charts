@@ -40,4 +40,12 @@
 * **Notes/Observations:** Enhanced controller with proper single replica enforcement. Added Helm validation that prevents deployment with multiple replicas, comprehensive documentation about HA limitations, and code comments explaining the architecture decisions. Changed deployment strategy to Recreate and updated Chart version to 2.0.1.
 * **AI Interaction**:
     * **My Prompt to AI:** "Ele suporta multiplas replicas ? Acho que talvez seja melhor fixar ele só com 1 pod certo ?"
-    * **AI Action/Result:** "Analyzed controller architecture, identified lack of leader election and race condition issues, implemented validation to prevent multiple replicas, added comprehensive documentation, and updated deployment strategy for single replica operation" 
+    * **AI Action/Result:** "Analyzed controller architecture, identified lack of leader election and race condition issues, implemented validation to prevent multiple replicas, added comprehensive documentation, and updated deployment strategy for single replica operation"
+
+### Checkpoint: 6d5279d - Simplified Single Replica Implementation
+* **GIT SHA:** `6d5279d`
+* **Commit Message:** `AI: Simplified - Fixed replicas to 1 in deployment template`
+* **Notes/Observations:** Simplified the approach by removing complex validation logic and directly setting replicas: 1 in the deployment template. This is cleaner and more straightforward than the previous validation approach. Removed unnecessary replicaCount from values.yaml and cleaned up all related documentation and comments.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Ao invés disso tudo, apenas sete direto no deployment 1 replica"
+    * **AI Action/Result:** "Removed complex validation logic, set replicas: 1 directly in deployment.yaml template, cleaned up values.yaml and documentation, and simplified the overall approach" 
