@@ -27,8 +27,8 @@
     * **AI Action/Result:** "Updated manifest with checkpoint documentation and pushed to origin/main"
 
 ### Checkpoint: Build Complete - Docker Image v2.0.0 Built and Pushed
-* **GIT SHA:** `[pending]`
-* **Commit Message:** `[pending]`
+* **GIT SHA:** `e173681`
+* **Commit Message:** `DOCS: Updated manifest with Docker build v2.0.0 checkpoint`
 * **Notes/Observations:** Successfully built and pushed Docker image v2.0.0 with the new Traefik API version. Image includes all API updates and is ready for deployment. Built both versioned (2.0.0) and latest tags.
 * **AI Interaction**:
     * **My Prompt to AI:** "Agora faça o build e push da nova versão"
