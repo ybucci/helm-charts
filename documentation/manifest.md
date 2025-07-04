@@ -32,4 +32,12 @@
 * **Notes/Observations:** Successfully built and pushed Docker image v2.0.0 with the new Traefik API version. Image includes all API updates and is ready for deployment. Built both versioned (2.0.0) and latest tags.
 * **AI Interaction**:
     * **My Prompt to AI:** "Agora faça o build e push da nova versão"
-    * **AI Action/Result:** "Built Docker image ybucci/traefik-external-dns-controller:2.0.0 and pushed to DockerHub with both 2.0.0 and latest tags" 
+    * **AI Action/Result:** "Built Docker image ybucci/traefik-external-dns-controller:2.0.0 and pushed to DockerHub with both 2.0.0 and latest tags"
+
+### Checkpoint: d406f78 - Single Replica Enforcement and Documentation
+* **GIT SHA:** `d406f78`
+* **Commit Message:** `AI: Enhanced - Single replica enforcement with validation and documentation`
+* **Notes/Observations:** Enhanced controller with proper single replica enforcement. Added Helm validation that prevents deployment with multiple replicas, comprehensive documentation about HA limitations, and code comments explaining the architecture decisions. Changed deployment strategy to Recreate and updated Chart version to 2.0.1.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Ele suporta multiplas replicas ? Acho que talvez seja melhor fixar ele só com 1 pod certo ?"
+    * **AI Action/Result:** "Analyzed controller architecture, identified lack of leader election and race condition issues, implemented validation to prevent multiple replicas, added comprehensive documentation, and updated deployment strategy for single replica operation" 
