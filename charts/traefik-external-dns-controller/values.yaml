@@ -7,7 +7,7 @@ controller:
   image:
     repository: ybucci/traefik-external-dns-controller
     pullPolicy: IfNotPresent
-    tag: "2.0.0"
+    tag: "2.0.1"
 
     # Environment variables
   env:
@@ -96,6 +96,7 @@ rbac:
   annotations: {}
 
 # Pod disruption budget
+# Note: Since we run only 1 replica, PDB is not recommended as it would prevent updates
 podDisruptionBudget:
   enabled: false
   minAvailable: 1
@@ -134,14 +135,15 @@ commonAnnotations: {}
 imagePullSecrets: []
 
 # Number of replicas
+# IMPORTANT: This controller does not support multiple replicas due to lack of leader election.
+# Multiple replicas would cause race conditions and duplicate processing.
+# Keep this value at 1 for proper operation.
 replicaCount: 1
 
 # Deployment strategy
+# Since we run only 1 replica, use Recreate to avoid issues during updates
 strategy:
-  type: RollingUpdate
-  rollingUpdate:
-    maxSurge: 1
-    maxUnavailable: 0
+  type: Recreate
 
 # Liveness and readiness probes
 livenessProbe:

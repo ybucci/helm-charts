@@ -309,6 +309,39 @@ spec:
           port: 80
 ```
 
+## High Availability and Scaling
+
+### ⚠️ Single Replica Limitation
+
+**This controller does not support multiple replicas** due to the following technical limitations:
+
+- **No Leader Election**: The controller runs without leader election to simplify implementation
+- **Local State**: Uses local caching that is not shared between instances
+- **Race Conditions**: Multiple replicas would cause conflicts when updating IngressRoutes simultaneously
+
+### Recommended Configuration
+
+```yaml
+# Always use exactly 1 replica
+replicaCount: 1
+
+# Use Recreate strategy for updates
+strategy:
+  type: Recreate
+
+# PDB not recommended for single replica
+podDisruptionBudget:
+  enabled: false
+```
+
+### Future Improvements
+
+To support multiple replicas, the following would need to be implemented:
+
+1. **Leader Election**: Enable kopf's built-in leader election mechanism
+2. **Shared State**: Replace local caching with cluster-wide state management
+3. **Coordination**: Implement proper coordination between controller instances
+
 ## Monitoring
 
 ### Health Checks
