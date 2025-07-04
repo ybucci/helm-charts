@@ -4,15 +4,15 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
-# Create non-root user for security
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+# Create non-root user for security with proper home directory
+RUN groupadd -r appuser && useradd -r -g appuser -m -d /home/appuser appuser
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    --no-install-recommends \
-    ca-certificates \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+  --no-install-recommends \
+  ca-certificates \
+  curl \
+  && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
 COPY requirements.txt .

@@ -438,9 +438,15 @@ def main():
     """Main entry point for the controller."""
     logger.info("Traefik External DNS Controller starting...")
     
+    # Set environment variable to avoid user detection issues
+    os.environ['KOPF_IDENTITY'] = 'traefik-external-dns-controller'
+    
     # Run the kopf operator
     try:
-        kopf.run()
+        kopf.run(
+            clusterwide=True,
+            standalone=True
+        )
     except KeyboardInterrupt:
         logger.info("Controller shutting down gracefully")
     except Exception as e:
