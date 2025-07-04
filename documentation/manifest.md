@@ -64,4 +64,12 @@
 * **Notes/Observations:** Fixed an issue with the liveness and readiness probes in the deployment template. The previous implementation was incorrectly rendering the probe configuration with the 'enabled' field included. Updated the template to explicitly set each probe parameter instead of using toYaml, ensuring proper rendering without the 'enabled' field.
 * **AI Interaction**:
     * **My Prompt to AI:** "Acho que ta com algum problema nos probes"
-    * **AI Action/Result:** "Identified and fixed probe configuration in deployment.yaml by explicitly setting each parameter instead of using toYaml" 
+    * **AI Action/Result:** "Identified and fixed probe configuration in deployment.yaml by explicitly setting each parameter instead of using toYaml"
+
+### Checkpoint: 47d54da - Chart Version Update
+* **GIT SHA:** `47d54da`
+* **Commit Message:** `CHORE: Bumped chart version to 2.0.2`
+* **Notes/Observations:** Updated the Helm chart version to 2.0.2 to reflect the probe configuration fix. The appVersion remains at 2.0.1 since the container image hasn't changed.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Mude a versão do helm chart por favor e faça o push"
+    * **AI Action/Result:** "Updated Chart.yaml to version 2.0.2 while keeping appVersion at 2.0.1" 
