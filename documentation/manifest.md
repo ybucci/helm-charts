@@ -88,4 +88,12 @@
 * **Notes/Observations:** Updated the Helm chart version to 2.0.3 and appVersion to 2.0.2 to reflect the controller fix. Built and pushed the new Docker image with the fixed controller code.
 * **AI Interaction**:
     * **My Prompt to AI:** "Ajustei mas continua com o mesmo problema"
-    * **AI Action/Result:** "Fixed the controller code, built a new Docker image version 2.0.2, and updated the Helm chart to version 2.0.3" 
+    * **AI Action/Result:** "Fixed the controller code, built a new Docker image version 2.0.2, and updated the Helm chart to version 2.0.3"
+
+### Checkpoint: 1bed580 - Dockerfile and Kopf Initialization Fix
+* **GIT SHA:** `1bed580d137d841382fd7db6c8cc75b51e8cac2e`
+* **Commit Message:** `FIX: Corrected Kopf initialization and main function structure`
+* **Notes/Observations:** Fixed the root cause of the CrashLoopBackOff issue. The problem was in the Dockerfile and how Kopf was being initialized. Restructured the controller to use a proper main() function with kopf.run() instead of the previous approach. This ensures the controller runs properly and stays alive.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Será algum problema no dockerfile talvez ?"
+    * **AI Action/Result:** "Identified the Dockerfile issue and restructured the controller with proper Kopf initialization using kopf.run() in a main function. Built and pushed version 2.0.3 of the image and updated chart to version 2.0.4" 
