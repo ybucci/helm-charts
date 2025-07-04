@@ -64,6 +64,8 @@ spec:
             - configMapRef:
                 name: {{ include "traefik-external-dns-controller.fullname" . }}-config
           env:
+            - name: KOPF_IDENTITY
+              value: "traefik-external-dns-controller"
           {{- if .Values.controller.env.servicesConfig }}
             - name: SERVICES_CONFIG
               value: {{ .Values.controller.env.servicesConfig | quote }}
