@@ -51,8 +51,8 @@
     * **AI Action/Result:** "Removed complex validation logic, set replicas: 1 directly in deployment.yaml template, cleaned up values.yaml and documentation, and simplified the overall approach"
 
 ### Checkpoint: Build Complete - Docker Image v2.0.1 Built and Pushed
-* **GIT SHA:** `[pending]`
-* **Commit Message:** `[pending]`
+* **GIT SHA:** `0077066`
+* **Commit Message:** `DOCS: Updated manifest with Docker build v2.0.1 checkpoint`
 * **Notes/Observations:** Successfully built and pushed Docker image v2.0.1 with the simplified single replica implementation. Image includes all code simplifications and clean deployment template. Built both versioned (2.0.1) and latest tags.
 * **AI Interaction**:
     * **My Prompt to AI:** "Faça o build e push"
