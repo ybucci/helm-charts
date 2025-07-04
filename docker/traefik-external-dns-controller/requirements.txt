@@ -1,0 +1,20 @@
+# Traefik External DNS Controller Dependencies
+# Core framework for building Kubernetes controllers
+kopf>=1.35.0
+
+# Kubernetes Python client
+kubernetes>=24.0.0
+
+# HTTP client for Kubernetes API
+urllib3>=1.26.0
+
+# JSON handling
+jsonschema>=4.0.0
+
+# Async support
+aiohttp>=3.8.0
+
+# Development and testing (optional)
+# pytest>=7.0.0
+# pytest-asyncio>=0.20.0
+# pytest-mock>=3.8.0 
