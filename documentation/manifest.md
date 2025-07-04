@@ -56,4 +56,12 @@
 * **Notes/Observations:** Successfully built and pushed Docker image v2.0.1 with the simplified single replica implementation. Image includes all code simplifications and clean deployment template. Built both versioned (2.0.1) and latest tags.
 * **AI Interaction**:
     * **My Prompt to AI:** "Faça o build e push"
-    * **AI Action/Result:** "Built Docker image ybucci/traefik-external-dns-controller:2.0.1 and pushed to DockerHub with both 2.0.1 and latest tags" 
+    * **AI Action/Result:** "Built Docker image ybucci/traefik-external-dns-controller:2.0.1 and pushed to DockerHub with both 2.0.1 and latest tags"
+
+### Checkpoint: e103521 - Fixed Probe Configuration
+* **GIT SHA:** `e103521`
+* **Commit Message:** `FIX: Corrected probe configuration in deployment template`
+* **Notes/Observations:** Fixed an issue with the liveness and readiness probes in the deployment template. The previous implementation was incorrectly rendering the probe configuration with the 'enabled' field included. Updated the template to explicitly set each probe parameter instead of using toYaml, ensuring proper rendering without the 'enabled' field.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Acho que ta com algum problema nos probes"
+    * **AI Action/Result:** "Identified and fixed probe configuration in deployment.yaml by explicitly setting each parameter instead of using toYaml" 
