@@ -1,26 +1,118 @@
 # Example values for traefik-external-dns-controller
 # This demonstrates common configuration scenarios
 
-# Basic configuration with external LoadBalancer only
+# ---
+# Dynamic Service Configuration (Recommended)
+# Basic external + internal setup
 controller:
   env:
-    # Reference to external LoadBalancer service
-    externalServiceRef: "traefik/traefik-external"
-    # Leave internal empty for external-only setup
-    internalServiceRef: ""
+    servicesConfig: |
+      {
+        "external": {
+          "namespace": "traefik",
+          "name": "traefik-external",
+          "priority": 100,
+          "annotations": {
+            "traefik.io/external": "true"
+          }
+        },
+        "internal": {
+          "namespace": "traefik",
+          "name": "traefik-internal",
+          "priority": 90,
+          "annotations": {
+            "traefik.io/internal": "true"
+          }
+        }
+      }
+
 # ---
-# Dual LoadBalancer configuration (external + internal)
+# Multi-Environment Configuration
 # controller:
 #   env:
-#     externalServiceRef: "traefik/traefik-external"
-#     internalServiceRef: "traefik/traefik-internal"
+#     servicesConfig: |
+#       {
+#         "production": {
+#           "namespace": "traefik-prod",
+#           "name": "traefik-production",
+#           "priority": 100,
+#           "annotations": {
+#             "traefik.io/environment": "production"
+#           }
+#         },
+#         "staging": {
+#           "namespace": "traefik-staging",
+#           "name": "traefik-staging",
+#           "priority": 90,
+#           "annotations": {
+#             "traefik.io/environment": "staging"
+#           }
+#         },
+#         "development": {
+#           "namespace": "traefik-dev",
+#           "name": "traefik-dev",
+#           "priority": 80,
+#           "annotations": {
+#             "traefik.io/environment": "development"
+#           }
+#         }
+#       }
+
+# ---
+# Multi-Region Configuration
+# controller:
+#   env:
+#     servicesConfig: |
+#       {
+#         "us-east": {
+#           "namespace": "traefik-us-east",
+#           "name": "traefik-us-east",
+#           "priority": 100,
+#           "annotations": {
+#             "traefik.io/region": "us-east"
+#           }
+#         },
+#         "us-west": {
+#           "namespace": "traefik-us-west",
+#           "name": "traefik-us-west",
+#           "priority": 90,
+#           "annotations": {
+#             "traefik.io/region": "us-west"
+#           }
+#         },
+#         "eu-central": {
+#           "namespace": "traefik-eu",
+#           "name": "traefik-eu-central",
+#           "priority": 80,
+#           "annotations": {
+#             "traefik.io/region": "eu-central"
+#           }
+#         }
+#       }
 
 # ---
 # Production configuration with resource limits
 # controller:
 #   env:
-#     externalServiceRef: "traefik/traefik-external"
-#     internalServiceRef: "traefik/traefik-internal"
+#     servicesConfig: |
+#       {
+#         "external": {
+#           "namespace": "traefik",
+#           "name": "traefik-external",
+#           "priority": 100,
+#           "annotations": {
+#             "traefik.io/external": "true"
+#           }
+#         },
+#         "internal": {
+#           "namespace": "traefik",
+#           "name": "traefik-internal",
+#           "priority": 90,
+#           "annotations": {
+#             "traefik.io/internal": "true"
+#           }
+#         }
+#       }
 #     kopfLogLevel: "WARNING"
 #     reconcileIntervalSeconds: 60
 #   resources:
@@ -41,7 +133,17 @@ controller:
 # Debug configuration
 # controller:
 #   env:
-#     externalServiceRef: "traefik/traefik-external"
+#     servicesConfig: |
+#       {
+#         "external": {
+#           "namespace": "traefik",
+#           "name": "traefik-external",
+#           "priority": 100,
+#           "annotations": {
+#             "traefik.io/external": "true"
+#           }
+#         }
+#       }
 #     kopfLogLevel: "DEBUG"
 # config:
 #   debug: true

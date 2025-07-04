@@ -7,14 +7,33 @@ controller:
   image:
     repository: ybucci/traefik-external-dns-controller
     pullPolicy: IfNotPresent
-    tag: "1.0.0"
+    tag: "2.0.0"
 
-  # Environment variables
+    # Environment variables
   env:
-    # External LoadBalancer service reference (required if using external routing)
-    externalServiceRef: ""
-    # Internal LoadBalancer service reference (required if using internal routing)
-    internalServiceRef: ""
+    # Dynamic service configuration (JSON format)
+    # Example:
+    # servicesConfig: |
+    #   {
+    #     "external": {
+    #       "namespace": "traefik",
+    #       "name": "traefik-external",
+    #       "priority": 100,
+    #       "annotations": {
+    #         "traefik.io/external": "true"
+    #       }
+    #     },
+    #     "internal": {
+    #       "namespace": "traefik",
+    #       "name": "traefik-internal",
+    #       "priority": 90,
+    #       "annotations": {
+    #         "traefik.io/internal": "true"
+    #       }
+    #     }
+    #   }
+    servicesConfig: ""
+
     # Kopf logging level
     kopfLogLevel: "INFO"
     # Reconciliation interval in seconds

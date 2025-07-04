@@ -22,7 +22,7 @@ rules:
   resources: ["services"]
   verbs: ["get", "list", "watch"]
 # IngressRoute permissions
-- apiGroups: ["traefik.containo.us"]
+- apiGroups: ["traefik.io"]
   resources: ["ingressroutes"]
   verbs: ["get", "list", "watch", "patch", "update"]
 # Events permissions for logging

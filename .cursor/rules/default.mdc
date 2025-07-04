@@ -1,0 +1,67 @@
+---
+alwaysApply: true
+---
+## **Rule 2: SHA Tracking & Manifest Logging**
+
+   a.  **Obtain SHA:** After every commit (both mine and those you assist with), ensure we have the full Git SHA of that commit. You may need to remind me or guide me to obtain it if necessary (e.g., "Please provide the latest Git SHA for the manifest entry.").
+
+   b.  **Log to Manifest (`documentation/manifest.md`):**
+      *Immediately after a commit, prompt to create or update an entry in `documentation/manifest.md`.
+      * The entry should be under the current date (YYYY-MM-DD) and grouped under the relevant overarching Feature or Task (see Rule 3).
+      * **Manifest Entry Structure for each Checkpoint:**
+          ```markdown
+          ### Checkpoint: [Timestamp or Sequential Step] - [Brief Description of Sub-Task]
+          * **GIT SHA:** `[The full Git SHA]`
+          * **Commit Message:** `[The exact commit message used]`
+          * **Notes/Observations:** [Brief human-readable note on the outcome, any deviations, critical decisions, or the next immediate step planned. You can ask me for this, or I will provide it.]
+          * **AI Interaction** (if you were involved in the task for this checkpoint):
+              * **My Prompt to AI:** "[The essence of my prompt to you]"
+              * **AI Action/Result:** "[Summary of your action/output and how it was integrated]"
+          ```
+
+   c.  **Adherence to Manifest Structure:** Always maintain the established Markdown structure in `documentation/manifest.md` (overall project title, date sections, feature/task sections, and then checkpoint lists as described above).
+
+---
+
+## **Rule 3: Feature Branching for Larger Initiatives**
+
+   a.  **Branch for Features/Large Tasks:** For any new feature, significant refactoring effort (spanning multiple commits/days), complex bug investigation, or experimental work, a dedicated Git feature branch must be used.
+   b.  **Branch Naming Convention:** Propose or use descriptive branch names, preferably prefixed, e.g., `feature/user-profile-management`, `task/database-optimisation`, `bugfix/login-error-handling`.
+   c.  **Manifest Logging for Branches:**
+      ***Branch Creation:** When a new such branch is created, initiate a new section in `documentation/manifest.md`:
+          ```markdown
+          ## Feature: [Feature Name] (Branch: `feature/branch-name`)
+          * **Branch Created From:** `[Source Branch, e.g., main/develop]` at SHA `[SHA of source branch when this was created]`
+          * **Start Date:** `YYYY-MM-DD`
+          * **Goal:** [Brief description of the overall feature/task goal]
+          * **Status:** In Progress
+          ```
+      * **Checkpoints on Branch:** All subsequent checkpoints (Rule 2) related to this feature will be logged under this section and will represent commits made on this feature branch.
+      ***Branch Merge/Completion:** When a feature branch is tested, approved, and merged into the main development line (e.g., `main` or `develop`), update its section in the manifest:
+          * Add `Merge Commit SHA: [SHA of the merge commit on main/develop]`
+          *Update `Status: Completed & Merged`
+          * Add `End Date: YYYY-MM-DD`
+
+---
+
+## **Rule 4: Utilizing Git History & Manifest for Context and Operations**
+
+   a.  **Resuming Tasks:** When I ask to resume a task or continue previous work, ask if there's a specific SHA or manifest entry I want to use as the starting point or context.
+   b.  **Debugging Assistance:** If I report an issue or ask for debugging help:
+      *Inquire about recent SHAs or manifest checkpoints that represent a known good state or the state just before the issue appeared.
+      * Request to see the relevant `manifest.md` entries or `git log` for these SHAs to understand the changes made.
+      * When proposing to revert or check out a previous state, explicitly mention the SHA: "Shall we try checking out SHA `[specific_sha]` (logged as '[Manifest Note/Commit Message]') to see if the issue persists there?"
+   c.  **Understanding Context:** Before generating code, offering solutions, or planning next steps, consult recent entries in `documentation/manifest.md` and the Git log (if easily accessible to you or if I provide it) to understand the current state and trajectory of the work.
+
+---
+
+## **Rule 5: Clarification, Proactivity & Methodology Alignment**
+
+   a.  **Ask Questions:** If any of these rules are unclear in a specific situation, or if a task I assign seems to conflict with this methodology, please ask for clarification *before* proceeding.
+   b.  **Proactive Reminders:** Gently remind me if we seem to have missed a commit or a manifest log after a meaningful task.
+   c.  **Methodology Check:** For complex instructions or new types of tasks, you can confirm by asking: "To ensure we follow the Git checkpoint and manifest logging strategy, how should we break this down and record it?"
+
+---
+
+**Overall Objective:**
+To maintain a meticulously detailed, auditable, and easily revertible development process. Git and `documentation/manifest.md` are our collective extended memory. Your role is to actively support and facilitate this workflow.

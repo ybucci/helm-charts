@@ -62,14 +62,10 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "traefik-external-dns-controller.fullname" . }}-config
-          {{- if .Values.controller.env.externalServiceRef }}
           env:
-            - name: EXTERNAL_SERVICE_REF
-              value: {{ .Values.controller.env.externalServiceRef | quote }}
-          {{- end }}
-          {{- if .Values.controller.env.internalServiceRef }}
-            - name: INTERNAL_SERVICE_REF
-              value: {{ .Values.controller.env.internalServiceRef | quote }}
+          {{- if .Values.controller.env.servicesConfig }}
+            - name: SERVICES_CONFIG
+              value: {{ .Values.controller.env.servicesConfig | quote }}
           {{- end }}
           {{- if .Values.livenessProbe.enabled }}
           livenessProbe:

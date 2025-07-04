@@ -11,6 +11,43 @@ import json
 from queue import Queue
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
+# Dynamic Service Configuration Support
+# ====================================
+# This controller supports dynamic service configuration through the SERVICES_CONFIG environment variable.
+# 
+# Example SERVICES_CONFIG JSON format:
+# {
+#   "external": {
+#     "namespace": "traefik",
+#     "name": "traefik-external",
+#     "priority": 100,
+#     "annotations": {
+#       "traefik.io/external": "true"
+#     }
+#   },
+#   "internal": {
+#     "namespace": "traefik",
+#     "name": "traefik-internal", 
+#     "priority": 90,
+#     "annotations": {
+#       "traefik.io/internal": "true"
+#     }
+#   },
+#   "staging": {
+#     "namespace": "traefik-staging",
+#     "name": "traefik-staging",
+#     "priority": 80,
+#     "annotations": {
+#       "traefik.io/environment": "staging"
+#     }
+#   }
+# }
+#
+# Service selection logic:
+# 1. If IngressRoute has "traefik.io/load-balancer-type" annotation, use that service directly
+# 2. If IngressRoute annotations match any service's annotation patterns, use highest priority match
+# 3. Otherwise, use the service with highest priority (lowest number)
+
 # 1. Disable warnings
 warnings.filterwarnings('ignore', module='kopf._core.reactor.running')
 
@@ -53,36 +90,26 @@ def parse_service_config():
     """Parse service configuration from environment variables."""
     configs = {}
     
-    # Parse EXTERNAL_SERVICE_REF (e.g., "traefik/traefik-external")
-    external_ref = os.getenv('EXTERNAL_SERVICE_REF', '')
-    if external_ref:
+    # Parse dynamic service configuration from JSON
+    services_config = os.getenv('SERVICES_CONFIG', '')
+    if services_config:
         try:
-            ns, name = external_ref.split('/')
-            configs['external'] = {'namespace': ns, 'name': name}
-            logger.info(f"External LoadBalancer configured: {external_ref}")
-        except ValueError:
-            logger.error(f"Invalid EXTERNAL_SERVICE_REF format: {external_ref}")
-    
-    # Parse INTERNAL_SERVICE_REF (e.g., "traefik/traefik-internal")
-    internal_ref = os.getenv('INTERNAL_SERVICE_REF', '')
-    if internal_ref:
-        try:
-            ns, name = internal_ref.split('/')
-            configs['internal'] = {'namespace': ns, 'name': name}
-            logger.info(f"Internal LoadBalancer configured: {internal_ref}")
-        except ValueError:
-            logger.error(f"Invalid INTERNAL_SERVICE_REF format: {internal_ref}")
-    
-    # Fallback to legacy MONITOR_SERVICE_REF as external
-    if not configs:
-        monitor_ref = os.getenv('MONITOR_SERVICE_REF')
-        if monitor_ref:
-            try:
-                ns, name = monitor_ref.split('/')
-                configs['external'] = {'namespace': ns, 'name': name}
-                logger.info(f"Using legacy MONITOR_SERVICE_REF as external: {ns}/{name}")
-            except ValueError:
-                logger.error(f"Invalid MONITOR_SERVICE_REF format: {monitor_ref}")
+            services_data = json.loads(services_config)
+            for service_id, service_config in services_data.items():
+                if 'namespace' in service_config and 'name' in service_config:
+                    configs[service_id] = {
+                        'namespace': service_config['namespace'],
+                        'name': service_config['name'],
+                        'priority': service_config.get('priority', 100),
+                        'annotations': service_config.get('annotations', {})
+                    }
+                    logger.info(f"Service '{service_id}' configured: {service_config['namespace']}/{service_config['name']} (priority: {configs[service_id]['priority']})")
+                else:
+                    logger.error(f"Invalid service configuration for '{service_id}': missing namespace or name")
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in SERVICES_CONFIG: {e}")
+        except Exception as e:
+            logger.error(f"Error parsing SERVICES_CONFIG: {e}")
     
     return configs
 
@@ -100,7 +127,7 @@ def configure(settings: kopf.OperatorSettings, **_):
     service_configs = parse_service_config()
     
     if not service_configs:
-        logger.error("No service configurations found! Set EXTERNAL_SERVICE_REF and/or INTERNAL_SERVICE_REF")
+        logger.error("No service configurations found! Set SERVICES_CONFIG environment variable")
         return
     
     logger.info("Controller started successfully | Monitoring services: %s", 
@@ -138,24 +165,36 @@ def determine_service_type(ingress_route):
     """Determine which service type to use for an IngressRoute."""
     annotations = ingress_route.get('metadata', {}).get('annotations', {})
     
-    # Check for explicit annotation
+    # Check for explicit load-balancer-type annotation
     lb_type = annotations.get('traefik.io/load-balancer-type', '').lower()
-    if lb_type in ['internal', 'external']:
+    if lb_type and lb_type in service_configs:
         return lb_type
     
-    # Check for internal annotation patterns
-    if annotations.get('traefik.io/internal', '').lower() == 'true':
-        return 'internal'
+    # Check for service-specific annotations
+    matching_services = []
+    for service_id, service_config in service_configs.items():
+        service_annotations = service_config.get('annotations', {})
+        matches = True
+        
+        # Check if all required annotations match
+        for key, value in service_annotations.items():
+            if annotations.get(key, '').lower() != value.lower():
+                matches = False
+                break
+        
+        if matches and service_annotations:  # Only consider if there are annotations to match
+            matching_services.append((service_id, service_config.get('priority', 100)))
     
-    # Check for external annotation patterns  
-    if annotations.get('traefik.io/external', '').lower() == 'true':
-        return 'external'
+    # If we found matching services, return the one with highest priority (lowest number)
+    if matching_services:
+        matching_services.sort(key=lambda x: x[1])
+        return matching_services[0][0]
     
-    # Default behavior based on available configurations
-    if 'external' in service_configs:
-        return 'external'
-    elif 'internal' in service_configs:
-        return 'internal'
+    # Use highest priority service (lowest priority number)
+    if service_configs:
+        default_services = [(service_id, config.get('priority', 100)) for service_id, config in service_configs.items()]
+        default_services.sort(key=lambda x: x[1])
+        return default_services[0][0]
     
     return None
 
