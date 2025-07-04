@@ -48,4 +48,12 @@
 * **Notes/Observations:** Simplified the approach by removing complex validation logic and directly setting replicas: 1 in the deployment template. This is cleaner and more straightforward than the previous validation approach. Removed unnecessary replicaCount from values.yaml and cleaned up all related documentation and comments.
 * **AI Interaction**:
     * **My Prompt to AI:** "Ao invés disso tudo, apenas sete direto no deployment 1 replica"
-    * **AI Action/Result:** "Removed complex validation logic, set replicas: 1 directly in deployment.yaml template, cleaned up values.yaml and documentation, and simplified the overall approach" 
+    * **AI Action/Result:** "Removed complex validation logic, set replicas: 1 directly in deployment.yaml template, cleaned up values.yaml and documentation, and simplified the overall approach"
+
+### Checkpoint: Build Complete - Docker Image v2.0.1 Built and Pushed
+* **GIT SHA:** `[pending]`
+* **Commit Message:** `[pending]`
+* **Notes/Observations:** Successfully built and pushed Docker image v2.0.1 with the simplified single replica implementation. Image includes all code simplifications and clean deployment template. Built both versioned (2.0.1) and latest tags.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Faça o build e push"
+    * **AI Action/Result:** "Built Docker image ybucci/traefik-external-dns-controller:2.0.1 and pushed to DockerHub with both 2.0.1 and latest tags" 
