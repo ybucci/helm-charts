@@ -112,4 +112,12 @@
 * **Notes/Observations:** Added KOPF_IDENTITY environment variable directly to the deployment template to ensure it's properly set in the Kubernetes environment. The previous fix was only in the Python code but the environment variable wasn't being passed to the container. Updated chart version to 2.0.6.
 * **AI Interaction**:
     * **My Prompt to AI:** "Mesmo erro"
-    * **AI Action/Result:** "Identified that KOPF_IDENTITY environment variable wasn't being set in the deployment template, added it directly to the deployment.yaml, and updated chart version to 2.0.6" 
+    * **AI Action/Result:** "Identified that KOPF_IDENTITY environment variable wasn't being set in the deployment template, added it directly to the deployment.yaml, and updated chart version to 2.0.6"
+
+### Checkpoint: c16e403 - Dockerfile Root User Fix
+* **GIT SHA:** `c16e403`
+* **Commit Message:** `AI: Fixed - Modified Dockerfile to run as root and avoid user detection issues`
+* **Notes/Observations:** Changed approach by modifying the Dockerfile to run as root user instead of creating a non-root user. This completely avoids the user detection issue that Kopf was encountering. Removed user creation code and set KOPF_IDENTITY environment variable in the Dockerfile. Local testing confirmed the fix works - no more user detection errors. Updated to image version 2.0.5 and chart version 2.0.7.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Ainda contiua com erro, consegue tentar mudar a abordagem talvez do dockerfile"
+    * **AI Action/Result:** "Modified Dockerfile to run as root, removed user creation code, added KOPF_IDENTITY environment variable, built and pushed version 2.0.5, and updated chart to version 2.0.7. Local testing showed the user detection error was resolved." 
