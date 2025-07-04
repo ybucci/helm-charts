@@ -104,4 +104,12 @@
 * **Notes/Observations:** Fixed the 'getpwuid(): uid not found: 1000' error by setting KOPF_IDENTITY environment variable to avoid user detection issues. Also improved the Dockerfile to create a proper user with home directory. The controller now starts successfully without user-related errors.
 * **AI Interaction**:
     * **My Prompt to AI:** "Agora mudou o erro, analise por favor"
-    * **AI Action/Result:** "Analyzed the new error (uid not found: 1000), identified it as a Kopf user detection issue, and fixed it by setting KOPF_IDENTITY environment variable. Built and pushed version 2.0.4 of the image and updated chart to version 2.0.5" 
+    * **AI Action/Result:** "Analyzed the new error (uid not found: 1000), identified it as a Kopf user detection issue, and fixed it by setting KOPF_IDENTITY environment variable. Built and pushed version 2.0.4 of the image and updated chart to version 2.0.5"
+
+### Checkpoint: af80592 - KOPF_IDENTITY Environment Variable in Deployment
+* **GIT SHA:** `af80592`
+* **Commit Message:** `AI: Fixed - Add KOPF_IDENTITY environment variable to deployment template`
+* **Notes/Observations:** Added KOPF_IDENTITY environment variable directly to the deployment template to ensure it's properly set in the Kubernetes environment. The previous fix was only in the Python code but the environment variable wasn't being passed to the container. Updated chart version to 2.0.6.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Mesmo erro"
+    * **AI Action/Result:** "Identified that KOPF_IDENTITY environment variable wasn't being set in the deployment template, added it directly to the deployment.yaml, and updated chart version to 2.0.6" 
