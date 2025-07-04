@@ -96,4 +96,12 @@
 * **Notes/Observations:** Fixed the root cause of the CrashLoopBackOff issue. The problem was in the Dockerfile and how Kopf was being initialized. Restructured the controller to use a proper main() function with kopf.run() instead of the previous approach. This ensures the controller runs properly and stays alive.
 * **AI Interaction**:
     * **My Prompt to AI:** "Será algum problema no dockerfile talvez ?"
-    * **AI Action/Result:** "Identified the Dockerfile issue and restructured the controller with proper Kopf initialization using kopf.run() in a main function. Built and pushed version 2.0.3 of the image and updated chart to version 2.0.4" 
+    * **AI Action/Result:** "Identified the Dockerfile issue and restructured the controller with proper Kopf initialization using kopf.run() in a main function. Built and pushed version 2.0.3 of the image and updated chart to version 2.0.4"
+
+### Checkpoint: 566f6fc - Kopf User Detection Fix
+* **GIT SHA:** `566f6fc677d0d5bcbb6f51036e099ce4f982c49c`
+* **Commit Message:** `FIX: Resolved Kopf user detection issue with KOPF_IDENTITY environment variable`
+* **Notes/Observations:** Fixed the 'getpwuid(): uid not found: 1000' error by setting KOPF_IDENTITY environment variable to avoid user detection issues. Also improved the Dockerfile to create a proper user with home directory. The controller now starts successfully without user-related errors.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Agora mudou o erro, analise por favor"
+    * **AI Action/Result:** "Analyzed the new error (uid not found: 1000), identified it as a Kopf user detection issue, and fixed it by setting KOPF_IDENTITY environment variable. Built and pushed version 2.0.4 of the image and updated chart to version 2.0.5" 
