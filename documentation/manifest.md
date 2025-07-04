@@ -8,4 +8,12 @@
 * **Notes/Observations:** Successfully updated all references from the old Traefik API version (traefik.containo.us/v1alpha1) to the new version (traefik.io/v1alpha1). Updated ClusterRole permissions, README.md examples, and all IngressRoute examples throughout the documentation.
 * **AI Interaction**:
     * **My Prompt to AI:** "Não quero usar a versão antiga, apenas essa nova traefik.io, portanto atualize as informações necessárias"
-    * **AI Action/Result:** "Identified and updated all references from traefik.containo.us/v1alpha1 to traefik.io/v1alpha1 in ClusterRole, README.md examples, and documentation" 
+    * **AI Action/Result:** "Identified and updated all references from traefik.containo.us/v1alpha1 to traefik.io/v1alpha1 in ClusterRole, README.md examples, and documentation"
+
+### Checkpoint: 38251ff - Manifest Documentation Created
+* **GIT SHA:** `38251ff`
+* **Commit Message:** `DOCS: Added manifest.md with API version update documentation`
+* **Notes/Observations:** Created documentation/manifest.md to track development progress according to the Git-powered memory methodology. This establishes the foundation for future checkpoint tracking.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Faça os commits necessários e o push"
+    * **AI Action/Result:** "Created manifest.md file, committed changes, and pushed both commits to origin/main successfully" 
