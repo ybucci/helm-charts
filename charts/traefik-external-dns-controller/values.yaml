@@ -1,0 +1,150 @@
+# Default values for traefik-external-dns-controller
+# This is a YAML-formatted file.
+
+# Controller configuration
+controller:
+  # Image configuration
+  image:
+    repository: ybucci/traefik-external-dns-controller
+    pullPolicy: IfNotPresent
+    tag: "1.0.0"
+
+  # Environment variables
+  env:
+    # External LoadBalancer service reference (required if using external routing)
+    externalServiceRef: ""
+    # Internal LoadBalancer service reference (required if using internal routing)
+    internalServiceRef: ""
+    # Kopf logging level
+    kopfLogLevel: "INFO"
+    # Reconciliation interval in seconds
+    reconcileIntervalSeconds: 30
+    # Enable health check endpoint
+    enableHealthCheck: true
+    # Health check port
+    healthCheckPort: 8080
+
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+
+  # Node selector
+  nodeSelector: {}
+
+  # Tolerations
+  tolerations: []
+
+  # Affinity
+  affinity: {}
+
+  # Annotations for the deployment
+  annotations: {}
+
+  # Labels for the deployment
+  labels: {}
+
+# Service Account
+serviceAccount:
+  # Create a service account
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# RBAC configuration
+rbac:
+  # Create RBAC resources
+  create: true
+  # Annotations to add to the RBAC resources
+  annotations: {}
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+# Monitoring
+monitoring:
+  # Enable Prometheus metrics
+  prometheus:
+    enabled: false
+    port: 9090
+    path: /metrics
+  # Enable ServiceMonitor for Prometheus Operator
+  serviceMonitor:
+    enabled: false
+    namespace: ""
+    interval: 30s
+    scrapeTimeout: 10s
+    labels: {}
+
+# Additional configuration
+config:
+  # Namespace to watch for IngressRoute resources (empty for all namespaces)
+  watchNamespace: ""
+  # Enable debug logging
+  debug: false
+  # Dry run mode (only log changes, don't apply them)
+  dryRun: false
+
+# Common labels
+commonLabels: {}
+
+# Common annotations
+commonAnnotations: {}
+
+# Image pull secrets
+imagePullSecrets: []
+
+# Number of replicas
+replicaCount: 1
+
+# Deployment strategy
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# Liveness and readiness probes
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /healthz
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /healthz
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# Pod security context
+podSecurityContext:
+  fsGroup: 1000

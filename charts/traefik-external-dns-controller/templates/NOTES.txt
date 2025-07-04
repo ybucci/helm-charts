@@ -1,0 +1,52 @@
+🚀 Traefik External DNS Controller has been deployed successfully!
+
+📋 Deployment Information:
+- Release Name: {{ .Release.Name }}
+- Namespace: {{ .Release.Namespace }}
+- Chart Version: {{ .Chart.Version }}
+- App Version: {{ .Chart.AppVersion }}
+- Controller Image: {{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag | default .Chart.AppVersion }}
+
+🔧 Configuration:
+{{- if .Values.controller.env.externalServiceRef }}
+- External LoadBalancer Service: {{ .Values.controller.env.externalServiceRef }}
+{{- end }}
+{{- if .Values.controller.env.internalServiceRef }}
+- Internal LoadBalancer Service: {{ .Values.controller.env.internalServiceRef }}
+{{- end }}
+{{- if and (not .Values.controller.env.externalServiceRef) (not .Values.controller.env.internalServiceRef) }}
+- ⚠️  Warning: No LoadBalancer services configured. Please set controller.env.externalServiceRef and/or controller.env.internalServiceRef
+{{- end }}
+
+📊 Monitoring:
+- Health Check: {{ if .Values.controller.env.enableHealthCheck }}Enabled on port {{ .Values.controller.env.healthCheckPort }}{{ else }}Disabled{{ end }}
+{{- if .Values.monitoring.prometheus.enabled }}
+- Prometheus Metrics: Enabled on port {{ .Values.monitoring.prometheus.port }}{{ .Values.monitoring.prometheus.path }}
+{{- end }}
+
+🔍 Check Controller Status:
+kubectl get pods -n {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "traefik-external-dns-controller.name" . }}"
+
+📝 View Controller Logs:
+kubectl logs -n {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "traefik-external-dns-controller.name" . }}" -f
+
+🎯 Example IngressRoute Annotations:
+For external routing:
+  annotations:
+    traefik.io/load-balancer-type: "external"
+
+For internal routing:
+  annotations:
+    traefik.io/load-balancer-type: "internal"
+
+Legacy annotations (still supported):
+  annotations:
+    traefik.io/external: "true"    # for external
+    traefik.io/internal: "true"    # for internal
+
+📚 Documentation:
+Visit https://github.com/ybucci/traefik-external-dns-controller for more information.
+
+{{- if .Values.config.dryRun }}
+⚠️  DRY RUN MODE: Controller will only log changes, not apply them.
+{{- end }}

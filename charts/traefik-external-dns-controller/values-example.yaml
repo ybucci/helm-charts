@@ -1,0 +1,68 @@
+# Example values for traefik-external-dns-controller
+# This demonstrates common configuration scenarios
+
+# Basic configuration with external LoadBalancer only
+controller:
+  env:
+    # Reference to external LoadBalancer service
+    externalServiceRef: "traefik/traefik-external"
+    # Leave internal empty for external-only setup
+    internalServiceRef: ""
+# ---
+# Dual LoadBalancer configuration (external + internal)
+# controller:
+#   env:
+#     externalServiceRef: "traefik/traefik-external"
+#     internalServiceRef: "traefik/traefik-internal"
+
+# ---
+# Production configuration with resource limits
+# controller:
+#   env:
+#     externalServiceRef: "traefik/traefik-external"
+#     internalServiceRef: "traefik/traefik-internal"
+#     kopfLogLevel: "WARNING"
+#     reconcileIntervalSeconds: 60
+#   resources:
+#     limits:
+#       cpu: 500m
+#       memory: 512Mi
+#     requests:
+#       cpu: 200m
+#       memory: 256Mi
+#   nodeSelector:
+#     node-role.kubernetes.io/control-plane: ""
+#   tolerations:
+#   - key: node-role.kubernetes.io/control-plane
+#     operator: Exists
+#     effect: NoSchedule
+
+# ---
+# Debug configuration
+# controller:
+#   env:
+#     externalServiceRef: "traefik/traefik-external"
+#     kopfLogLevel: "DEBUG"
+# config:
+#   debug: true
+#   dryRun: true  # Only log changes, don't apply them
+
+# ---
+# Monitoring configuration
+# monitoring:
+#   prometheus:
+#     enabled: true
+#     port: 9090
+#     path: /metrics
+#   serviceMonitor:
+#     enabled: true
+#     namespace: monitoring
+#     labels:
+#       release: prometheus
+
+# ---
+# Multi-replica configuration with Pod Disruption Budget
+# replicaCount: 2
+# podDisruptionBudget:
+#   enabled: true
+#   minAvailable: 1
