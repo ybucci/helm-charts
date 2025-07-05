@@ -128,4 +128,12 @@
 * **Notes/Observations:** Fixed the root cause of why the deployment was still using the old image - the values.yaml file still had tag "2.0.4" instead of "2.0.5". Also updated the security context to match the root user approach: changed runAsNonRoot to false, runAsUser to 0, runAsGroup to 0, and fsGroup to 0. Updated chart version to 2.0.8. This should finally resolve the deployment issue.
 * **AI Interaction**:
     * **My Prompt to AI:** "Acho que vc não alterou o valor default do values"
-    * **AI Action/Result:** "Identified that values.yaml still had the old image tag 2.0.4 and conflicting security context settings. Updated image tag to 2.0.5, changed security context to run as root (user 0), and updated chart to version 2.0.8." 
+    * **AI Action/Result:** "Identified that values.yaml still had the old image tag 2.0.4 and conflicting security context settings. Updated image tag to 2.0.5, changed security context to run as root (user 0), and updated chart to version 2.0.8."
+
+### Checkpoint: 3e7bd69 - Controller Logic Fix for Load Balancer Type
+* **GIT SHA:** `3e7bd69`
+* **Commit Message:** `AI: Fixed - Removed automatic traefik.io/load-balancer-type annotation to prevent override of explicit configurations`
+* **Notes/Observations:** Identified and fixed the root cause of why all IngressRoutes were being set to "internal". The controller was automatically adding the `traefik.io/load-balancer-type` annotation with the determined service type, which then became an explicit configuration that overrode the priority logic in subsequent runs. Removed this automatic annotation to allow the priority-based logic to work correctly. Updated to image version 2.0.6 and chart version 2.0.9.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Acho que o seu codigo que adicionou esse annotation"
+    * **AI Action/Result:** "Analyzed the code and found that line 220 in update_ingress_route was automatically adding traefik.io/load-balancer-type annotation, creating a feedback loop. Removed this line to fix the priority logic and allow proper service type determination." 
