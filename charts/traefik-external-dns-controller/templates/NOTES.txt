@@ -15,10 +15,7 @@
 {{- end }}
 
 📊 Monitoring:
-- Health Check: {{ if .Values.controller.env.enableHealthCheck }}Enabled on port {{ .Values.controller.env.healthCheckPort }}{{ else }}Disabled{{ end }}
-{{- if .Values.monitoring.prometheus.enabled }}
-- Prometheus Metrics: Enabled on port {{ .Values.monitoring.prometheus.port }}{{ .Values.monitoring.prometheus.path }}
-{{- end }}
+- Health Check: Enabled on port 8080 (hardcoded)
 
 🔍 Check Controller Status:
 kubectl get pods -n {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "traefik-external-dns-controller.name" . }}"
@@ -39,7 +36,3 @@ Custom annotation matching:
 
 📚 Documentation:
 Visit https://github.com/ybucci/traefik-external-dns-controller for more information.
-
-{{- if .Values.config.dryRun }}
-⚠️  DRY RUN MODE: Controller will only log changes, not apply them.
-{{- end }}

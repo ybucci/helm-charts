@@ -65,7 +65,7 @@ spec:
                 name: {{ include "traefik-external-dns-controller.fullname" . }}-config
           env:
             - name: KOPF_IDENTITY
-              value: "traefik-external-dns-controller"
+              value: {{ include "traefik-external-dns-controller.fullname" . | quote }}
           {{- if .Values.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
