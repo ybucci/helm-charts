@@ -176,4 +176,12 @@
 * **Notes/Observations:** Fixed the issue where the controller was repeatedly logging "Starting individual watch for..." messages every 7 seconds. The problem was in the watch_service function that was constantly recreating threads due to a timeout=1 in thread.join(). Restructured the service watch logic to eliminate the infinite restart loop, allowing threads to run indefinitely as intended. This significantly reduces log noise and improves controller stability. Updated to image version 2.0.9 and chart version 2.1.4.
 * **AI Interaction**:
     * **My Prompt to AI:** "Ele fica repetindo na log: [2025-07-05 03:14:45,474] [INFO] - Starting individual watch for internal service: traefik/traefik-internal"
-    * **AI Action/Result:** "Identified that the watch_service function was constantly restarting threads due to a 1-second timeout in thread.join(). Restructured the function to remove the infinite restart loop, allowing service watch threads to run indefinitely. Built and pushed image version 2.0.9 and updated chart to version 2.1.4." 
+    * **AI Action/Result:** "Identified that the watch_service function was constantly restarting threads due to a 1-second timeout in thread.join(). Restructured the function to remove the infinite restart loop, allowing service watch threads to run indefinitely. Built and pushed image version 2.0.9 and updated chart to version 2.1.4."
+
+### Checkpoint: 7ea67e2 - Simplified Configuration Management
+* **GIT SHA:** `7ea67e2`
+* **Commit Message:** `AI: Simplified - Removed unused environment variables from ConfigMap and values.yaml`
+* **Notes/Observations:** Analyzed the controller code and identified that most environment variables in the ConfigMap were not being used. Simplified the configuration by removing all unused variables (KOPF_LOG_LEVEL, RECONCILE_INTERVAL_SECONDS, ENABLE_HEALTH_CHECK, HEALTH_CHECK_PORT, WATCH_NAMESPACE, DEBUG, DRY_RUN) and keeping only SERVICES_CONFIG which is the only variable actually used by the controller. Also removed corresponding sections from values.yaml and updated deployment template to remove references to unused variables. This significantly simplifies the chart configuration and reduces confusion. Updated chart version to 2.1.5.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Eu preciso de todas essas env no configmap com essa alteração que fizemos ?" / "Sim"
+    * **AI Action/Result:** "Analyzed controller.py code and found that only SERVICES_CONFIG environment variable is actually used. Removed all unused environment variables from ConfigMap, simplified values.yaml by removing unused configuration sections, updated deployment template to remove references to unused variables, and updated chart to version 2.1.5." 
