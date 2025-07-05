@@ -320,55 +320,49 @@ def watch_service():
         return
 
     v1 = CoreV1Api()
-    watches = {}
     
-    # Initialize watches for each configured service
-    for service_type, config in service_configs.items():
-        watches[service_type] = watch.Watch()
-        logger.info(f"Initializing watch for {service_type} service: {config['namespace']}/{config['name']}")
-
     logger.info(f"Starting watch for {len(service_configs)} services")
     
-    while True:
-        try:
-            service_watch_active = True
-            logger.debug("Multi-service watch loop active")
+    try:
+        service_watch_active = True
+        logger.debug("Multi-service watch starting")
+        
+        # Watch each service in parallel using threads
+        threads = []
+        for service_type, config in service_configs.items():
+            thread = threading.Thread(
+                target=watch_single_service,
+                args=(service_type, config, v1),
+                daemon=True
+            )
+            thread.start()
+            threads.append(thread)
+            logger.debug(f"Started watch thread for {service_type} service")
+        
+        # Wait for all threads to complete (they should run indefinitely)
+        for thread in threads:
+            thread.join()
             
-            # Watch each service in parallel using threads
-            threads = []
-            for service_type, config in service_configs.items():
-                thread = threading.Thread(
-                    target=watch_single_service,
-                    args=(service_type, config, v1),
-                    daemon=True
-                )
-                thread.start()
-                threads.append(thread)
-            
-            # Wait for all threads to complete (they shouldn't under normal circumstances)
-            for thread in threads:
-                thread.join(timeout=1)
-                
-            logger.debug("Multi-service watch ended, restarting")
-            time.sleep(5)
-            
-        except Exception as e:
-            logger.error(f"Error in multi-service watch: {str(e)}, reconnecting in 5 seconds")
-            service_watch_active = False
-            time.sleep(5)
+        logger.warning("All service watch threads have ended unexpectedly")
+        
+    except Exception as e:
+        logger.error(f"Error in multi-service watch: {str(e)}")
+        service_watch_active = False
+        raise
 
 def watch_single_service(service_type, config, v1_client):
     """Watch a single service for changes."""
     global service_hostnames
     
-    w = watch.Watch()
     ns = config['namespace']
     name = config['name']
     
-    logger.info(f"Starting individual watch for {service_type} service: {ns}/{name}")
+    logger.info(f"Starting watch for {service_type} service: {ns}/{name}")
     
     while True:
         try:
+            w = watch.Watch()
+            
             for event in w.stream(
                 v1_client.list_namespaced_service,
                 namespace=ns,
@@ -394,9 +388,9 @@ def watch_single_service(service_type, config, v1_client):
                 update_health()
                 
         except Exception as e:
-            logger.error(f"Error watching {service_type} service {ns}/{name}: {str(e)}, reconnecting in 5 seconds")
+            logger.warning(f"Watch connection lost for {service_type} service {ns}/{name}: {str(e)}, reconnecting in 5 seconds")
             time.sleep(5)
-            break
+            # Continue the while loop to reconnect
 
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):

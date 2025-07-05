@@ -7,10 +7,9 @@ controller:
   image:
     repository: ybucci/traefik-external-dns-controller
     pullPolicy: IfNotPresent
-    tag: "2.0.8"
+    tag: "2.0.9"
 
     # Environment variables
-  env:
     # Dynamic service configuration (JSON format)
     # Example:
     # servicesConfig: |
