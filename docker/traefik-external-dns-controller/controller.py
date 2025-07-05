@@ -321,6 +321,23 @@ def watch_service():
 
     v1 = CoreV1Api()
     
+    # Initialize service hostnames to avoid unnecessary sync on startup
+    logger.info("Initializing current service hostnames...")
+    for service_type, config in service_configs.items():
+        try:
+            svc = v1.read_namespaced_service(
+                name=config['name'], 
+                namespace=config['namespace']
+            )
+            if svc.status and svc.status.load_balancer and svc.status.load_balancer.ingress:
+                hostname = svc.status.load_balancer.ingress[0].hostname or svc.status.load_balancer.ingress[0].ip
+                service_hostnames[service_type] = hostname
+                logger.info(f"Initialized {service_type} service hostname: {hostname}")
+            else:
+                logger.info(f"No hostname available yet for {service_type} service")
+        except Exception as e:
+            logger.warning(f"Could not initialize hostname for {service_type} service: {str(e)}")
+    
     logger.info(f"Starting watch for {len(service_configs)} services")
     
     try:
