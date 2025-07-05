@@ -300,16 +300,31 @@ def on_ingressroute_event(name, namespace, body, **_):
         logger.warning(f"No hostname available for {service_type} LoadBalancer for IngressRoute {namespace}/{name}")
         return
     
-    # Check if update is needed
-    current_target = body['metadata'].get('annotations', {}).get('external-dns.alpha.kubernetes.io/target')
-    current_type = body['metadata'].get('annotations', {}).get('traefik.io/load-balancer-type')
+    # Check current state
+    annotations = body['metadata'].get('annotations', {})
+    current_target = annotations.get('external-dns.alpha.kubernetes.io/target')
+    current_type = annotations.get('traefik.io/load-balancer-type')
     
-    if current_target != hostname or current_type != service_type:
-        logger.info(f"Updating via event IngressRoute {namespace}/{name} with {service_type} hostname: {hostname}")
+    # Determine if update is actually needed
+    needs_update = False
+    update_reason = ""
+    
+    # Check if hostname needs to be updated
+    if current_target != hostname:
+        needs_update = True
+        update_reason = f"hostname mismatch (current: {current_target}, expected: {hostname})"
+    
+    # Only check load-balancer-type if it's explicitly set and different
+    elif current_type is not None and current_type != service_type:
+        needs_update = True
+        update_reason = f"explicit load-balancer-type mismatch (current: {current_type}, expected: {service_type})"
+    
+    # Perform update only if actually needed
+    if needs_update:
+        logger.info(f"Updating via event IngressRoute {namespace}/{name} with {service_type} hostname: {hostname} (reason: {update_reason})")
         update_ingress_route(name, namespace, hostname, service_type)
-    elif current_target is None:
-        logger.info(f"Adding annotation to IngressRoute {namespace}/{name} with {service_type} hostname: {hostname}")
-        update_ingress_route(name, namespace, hostname, service_type)
+    else:
+        logger.debug(f"IngressRoute {namespace}/{name} already correctly configured for {service_type}")
 
 def watch_service():
     """Watch multiple services for changes in real-time."""
