@@ -168,4 +168,12 @@
 * **Notes/Observations:** Improved error handling in the controller to silently ignore 404 errors when trying to update IngressRoutes that have been deleted. This eliminates unnecessary error logs when resources are removed during processing, which is expected behavior. Only actual errors are now logged, making the logs cleaner and more meaningful. Updated to image version 2.0.8 and chart version 2.1.2.
 * **AI Interaction**:
     * **My Prompt to AI:** "Não podemos mudar essa mensagem para algo do tipo como IngressRoute removido" / "Ao invés disso vamos apenas omitir essa log pode ser ?"
-    * **AI Action/Result:** "Modified error handling in update_ingress_route function to silently ignore 404 errors (Not Found) as they represent expected behavior when resources are deleted during processing. Built and pushed image version 2.0.8 and updated chart to version 2.1.2." 
+    * **AI Action/Result:** "Modified error handling in update_ingress_route function to silently ignore 404 errors (Not Found) as they represent expected behavior when resources are deleted during processing. Built and pushed image version 2.0.8 and updated chart to version 2.1.2."
+
+### Checkpoint: 4353cb9 - Fixed Service Watch Loop Repetitive Logs
+* **GIT SHA:** `4353cb9`
+* **Commit Message:** `AI: Fixed - Service watch loop causing repetitive log messages`
+* **Notes/Observations:** Fixed the issue where the controller was repeatedly logging "Starting individual watch for..." messages every 7 seconds. The problem was in the watch_service function that was constantly recreating threads due to a timeout=1 in thread.join(). Restructured the service watch logic to eliminate the infinite restart loop, allowing threads to run indefinitely as intended. This significantly reduces log noise and improves controller stability. Updated to image version 2.0.9 and chart version 2.1.4.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Ele fica repetindo na log: [2025-07-05 03:14:45,474] [INFO] - Starting individual watch for internal service: traefik/traefik-internal"
+    * **AI Action/Result:** "Identified that the watch_service function was constantly restarting threads due to a 1-second timeout in thread.join(). Restructured the function to remove the infinite restart loop, allowing service watch threads to run indefinitely. Built and pushed image version 2.0.9 and updated chart to version 2.1.4." 
