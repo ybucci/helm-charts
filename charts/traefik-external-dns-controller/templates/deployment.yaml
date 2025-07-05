@@ -66,10 +66,6 @@ spec:
           env:
             - name: KOPF_IDENTITY
               value: "traefik-external-dns-controller"
-          {{- if .Values.controller.env.servicesConfig }}
-            - name: SERVICES_CONFIG
-              value: {{ .Values.controller.env.servicesConfig | quote }}
-          {{- end }}
           {{- if .Values.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
@@ -95,12 +91,10 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
-          {{- if .Values.controller.env.enableHealthCheck }}
           ports:
             - name: health
-              containerPort: {{ .Values.controller.env.healthCheckPort }}
+              containerPort: 8080
               protocol: TCP
-          {{- end }}
       volumes:
         - name: tmp
           emptyDir: {}

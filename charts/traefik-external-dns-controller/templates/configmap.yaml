@@ -12,16 +12,4 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 data:
-  KOPF_LOG_LEVEL: {{ .Values.controller.env.kopfLogLevel | quote }}
-  RECONCILE_INTERVAL_SECONDS: {{ .Values.controller.env.reconcileIntervalSeconds | quote }}
-  ENABLE_HEALTH_CHECK: {{ .Values.controller.env.enableHealthCheck | quote }}
-  HEALTH_CHECK_PORT: {{ .Values.controller.env.healthCheckPort | quote }}
-  {{- if .Values.config.watchNamespace }}
-  WATCH_NAMESPACE: {{ .Values.config.watchNamespace | quote }}
-  {{- end }}
-  {{- if .Values.config.debug }}
-  DEBUG: {{ .Values.config.debug | quote }}
-  {{- end }}
-  {{- if .Values.config.dryRun }}
-  DRY_RUN: {{ .Values.config.dryRun | quote }}
-  {{- end }} 
+  SERVICES_CONFIG: {{ .Values.controller.env.servicesConfig | quote }} 
