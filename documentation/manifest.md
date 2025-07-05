@@ -152,4 +152,12 @@
 * **Notes/Observations:** Fixed APIForbiddenError where the controller was unable to list customresourcedefinitions in the apiextensions.k8s.io API group. Added the necessary permissions to the ClusterRole for Kopf framework to discover available CRDs in the cluster. This resolves the error: "customresourcedefinitions.apiextensions.k8s.io is forbidden". Updated chart version to 2.1.1.
 * **AI Interaction**:
     * **My Prompt to AI:** "Parece que está funcionando, porém está gerando alguma log de erro: Request attempt #9/9 failed; escalating: GET https://10.100.0.1:443/apis/apiextensions.k8s.io/v1/customresourcedefinitions -> APIForbiddenError"
-    * **AI Action/Result:** "Identified that the ServiceAccount lacked permissions for customresourcedefinitions. Added apiextensions.k8s.io API group with customresourcedefinitions resource and get/list/watch verbs to the ClusterRole. Updated chart version to 2.1.1." 
+    * **AI Action/Result:** "Identified that the ServiceAccount lacked permissions for customresourcedefinitions. Added apiextensions.k8s.io API group with customresourcedefinitions resource and get/list/watch verbs to the ClusterRole. Updated chart version to 2.1.1."
+
+### Checkpoint: e43e405 - Comprehensive Documentation Update
+* **GIT SHA:** `e43e405`
+* **Commit Message:** `AI: Updated - Comprehensive documentation update for v2.1.1`
+* **Notes/Observations:** Updated all documentation to reflect the latest changes and features. Replaced priority-based configuration examples with the new default-based approach throughout README.md and values-example.yaml. Added comprehensive RBAC permissions documentation, migration guide, and enhanced troubleshooting section. Updated image tag references to 2.0.7 and chart examples to reflect current state. Added detailed explanations of the new service selection logic and annotation handling.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Por favor atualize a documentação com as ultimas alterçaões que fizemos"
+    * **AI Action/Result:** "Comprehensively updated README.md and values-example.yaml with latest features, replaced all priority-based examples with default-based configuration, added RBAC documentation, migration guide, enhanced troubleshooting, and updated all version references to current state." 
