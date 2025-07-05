@@ -221,7 +221,7 @@ def update_ingress_route(name, namespace, hostname, service_type):
         # Build annotations
         annotations = current.get('metadata', {}).get('annotations', {})
         annotations['external-dns.alpha.kubernetes.io/target'] = hostname
-        annotations['traefik.io/load-balancer-type'] = service_type
+        # Note: Do not add traefik.io/load-balancer-type to avoid overriding explicit configurations
         
         patch = {
             'metadata': {
