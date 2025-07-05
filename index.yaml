@@ -3,6 +3,28 @@ entries:
   traefik-external-dns-controller:
   - apiVersion: v2
     appVersion: 2.0.9
+    created: "2025-07-05T03:23:02.110575314Z"
+    description: A Helm chart for Traefik External DNS Controller - Monitors multiple
+      Traefik LoadBalancer services with dynamic configuration and updates external-dns
+      annotations on IngressRoutes
+    digest: 5feae7746f6c61cc7e74bc9d310a7d23413a361795736af04a5098f8f57989d1
+    home: https://github.com/ybucci/traefik-external-dns-controller
+    keywords:
+    - traefik
+    - external-dns
+    - kubernetes
+    - controller
+    - loadbalancer
+    maintainers:
+    - email: yuri.bucci@example.com
+      name: Yuri Bucci
+    name: traefik-external-dns-controller
+    type: application
+    urls:
+    - https://github.com/ybucci/helm-charts/releases/download/traefik-external-dns-controller-2.1.5/traefik-external-dns-controller-2.1.5.tgz
+    version: 2.1.5
+  - apiVersion: v2
+    appVersion: 2.0.9
     created: "2025-07-05T03:18:19.930778193Z"
     description: A Helm chart for Traefik External DNS Controller - Monitors multiple
       Traefik LoadBalancer services with dynamic configuration and updates external-dns
@@ -373,4 +395,4 @@ entries:
     urls:
     - https://github.com/ybucci/helm-charts/releases/download/traefik-external-dns-operator-1.0.0/traefik-external-dns-operator-1.0.0.tgz
     version: 1.0.0
-generated: "2025-07-05T03:18:19.930893748Z"
+generated: "2025-07-05T03:23:02.110705028Z"
