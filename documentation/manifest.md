@@ -144,4 +144,12 @@
 * **Notes/Observations:** Enhanced the controller logic to use a more intuitive `default: true/false` configuration instead of priority numbers. When no specific annotations match an IngressRoute, the controller now uses the service marked as `default: true`. This makes the configuration more explicit and easier to understand. Updated the example configuration and set external as the default service. Updated to image version 2.0.7 and chart version 2.1.0.
 * **AI Interaction**:
     * **My Prompt to AI:** "Ao invés de usar prioridade talvez seja melhor na config colocarmos um definição default = true ou algo do tipo, ou seja, casa não tenha nenhuma anotação ele sempre vai para o default"
-    * **AI Action/Result:** "Replaced priority-based logic with default service configuration. Modified determine_service_type function to look for 'default: true' instead of priority numbers. Updated values.yaml with new configuration format and set external service as default." 
+    * **AI Action/Result:** "Replaced priority-based logic with default service configuration. Modified determine_service_type function to look for 'default: true' instead of priority numbers. Updated values.yaml with new configuration format and set external service as default."
+
+### Checkpoint: 7f691d4 - RBAC Permissions Fix for Kopf Framework
+* **GIT SHA:** `7f691d4`
+* **Commit Message:** `AI: Fixed - Added CRD discovery permissions for Kopf framework`
+* **Notes/Observations:** Fixed APIForbiddenError where the controller was unable to list customresourcedefinitions in the apiextensions.k8s.io API group. Added the necessary permissions to the ClusterRole for Kopf framework to discover available CRDs in the cluster. This resolves the error: "customresourcedefinitions.apiextensions.k8s.io is forbidden". Updated chart version to 2.1.1.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Parece que está funcionando, porém está gerando alguma log de erro: Request attempt #9/9 failed; escalating: GET https://10.100.0.1:443/apis/apiextensions.k8s.io/v1/customresourcedefinitions -> APIForbiddenError"
+    * **AI Action/Result:** "Identified that the ServiceAccount lacked permissions for customresourcedefinitions. Added apiextensions.k8s.io API group with customresourcedefinitions resource and get/list/watch verbs to the ClusterRole. Updated chart version to 2.1.1." 
