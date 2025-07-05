@@ -185,18 +185,20 @@ def determine_service_type(ingress_route):
                 break
         
         if matches and service_annotations:  # Only consider if there are annotations to match
-            matching_services.append((service_id, service_config.get('priority', 100)))
+            matching_services.append(service_id)
     
-    # If we found matching services, return the one with highest priority (lowest number)
+    # If we found matching services, return the first one
     if matching_services:
-        matching_services.sort(key=lambda x: x[1])
-        return matching_services[0][0]
+        return matching_services[0]
     
-    # Use highest priority service (lowest priority number)
+    # Use default service if no specific annotations match
     if service_configs:
-        default_services = [(service_id, config.get('priority', 100)) for service_id, config in service_configs.items()]
-        default_services.sort(key=lambda x: x[1])
-        return default_services[0][0]
+        for service_id, config in service_configs.items():
+            if config.get('default', False):
+                return service_id
+        
+        # Fallback: if no default is explicitly set, use the first service
+        return list(service_configs.keys())[0]
     
     return None
 
