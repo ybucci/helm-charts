@@ -136,4 +136,12 @@
 * **Notes/Observations:** Identified and fixed the root cause of why all IngressRoutes were being set to "internal". The controller was automatically adding the `traefik.io/load-balancer-type` annotation with the determined service type, which then became an explicit configuration that overrode the priority logic in subsequent runs. Removed this automatic annotation to allow the priority-based logic to work correctly. Updated to image version 2.0.6 and chart version 2.0.9.
 * **AI Interaction**:
     * **My Prompt to AI:** "Acho que o seu codigo que adicionou esse annotation"
-    * **AI Action/Result:** "Analyzed the code and found that line 220 in update_ingress_route was automatically adding traefik.io/load-balancer-type annotation, creating a feedback loop. Removed this line to fix the priority logic and allow proper service type determination." 
+    * **AI Action/Result:** "Analyzed the code and found that line 220 in update_ingress_route was automatically adding traefik.io/load-balancer-type annotation, creating a feedback loop. Removed this line to fix the priority logic and allow proper service type determination."
+
+### Checkpoint: e193396 - Default Service Configuration Enhancement
+* **GIT SHA:** `e193396`
+* **Commit Message:** `AI: Enhanced - Replaced priority-based logic with default service configuration`
+* **Notes/Observations:** Enhanced the controller logic to use a more intuitive `default: true/false` configuration instead of priority numbers. When no specific annotations match an IngressRoute, the controller now uses the service marked as `default: true`. This makes the configuration more explicit and easier to understand. Updated the example configuration and set external as the default service. Updated to image version 2.0.7 and chart version 2.1.0.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Ao invés de usar prioridade talvez seja melhor na config colocarmos um definição default = true ou algo do tipo, ou seja, casa não tenha nenhuma anotação ele sempre vai para o default"
+    * **AI Action/Result:** "Replaced priority-based logic with default service configuration. Modified determine_service_type function to look for 'default: true' instead of priority numbers. Updated values.yaml with new configuration format and set external service as default." 
