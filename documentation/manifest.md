@@ -160,4 +160,12 @@
 * **Notes/Observations:** Updated all documentation to reflect the latest changes and features. Replaced priority-based configuration examples with the new default-based approach throughout README.md and values-example.yaml. Added comprehensive RBAC permissions documentation, migration guide, and enhanced troubleshooting section. Updated image tag references to 2.0.7 and chart examples to reflect current state. Added detailed explanations of the new service selection logic and annotation handling.
 * **AI Interaction**:
     * **My Prompt to AI:** "Por favor atualize a documentação com as ultimas alterçaões que fizemos"
-    * **AI Action/Result:** "Comprehensively updated README.md and values-example.yaml with latest features, replaced all priority-based examples with default-based configuration, added RBAC documentation, migration guide, enhanced troubleshooting, and updated all version references to current state." 
+    * **AI Action/Result:** "Comprehensively updated README.md and values-example.yaml with latest features, replaced all priority-based examples with default-based configuration, added RBAC documentation, migration guide, enhanced troubleshooting, and updated all version references to current state."
+
+### Checkpoint: ac0ae50 - Silenced 404 Errors for Removed IngressRoutes
+* **GIT SHA:** `ac0ae50`
+* **Commit Message:** `AI: Fixed - Silenced 404 errors for removed IngressRoutes`
+* **Notes/Observations:** Improved error handling in the controller to silently ignore 404 errors when trying to update IngressRoutes that have been deleted. This eliminates unnecessary error logs when resources are removed during processing, which is expected behavior. Only actual errors are now logged, making the logs cleaner and more meaningful. Updated to image version 2.0.8 and chart version 2.1.2.
+* **AI Interaction**:
+    * **My Prompt to AI:** "Não podemos mudar essa mensagem para algo do tipo como IngressRoute removido" / "Ao invés disso vamos apenas omitir essa log pode ser ?"
+    * **AI Action/Result:** "Modified error handling in update_ingress_route function to silently ignore 404 errors (Not Found) as they represent expected behavior when resources are deleted during processing. Built and pushed image version 2.0.8 and updated chart to version 2.1.2." 
