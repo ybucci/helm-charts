@@ -245,7 +245,11 @@ def update_ingress_route(name, namespace, hostname, service_type):
         update_health()
         return True
     except Exception as e:
-        logger.error(f"Failed to update IngressRoute {namespace}/{name}: {str(e)}")
+        # Check if it's a 404 error (resource not found) - silently ignore
+        error_str = str(e)
+        if not ("Not Found" in error_str or "not found" in error_str or 
+                "404" in error_str or "(404)" in error_str):
+            logger.error(f"Failed to update IngressRoute {namespace}/{name}: {error_str}")
         return False
 
 def sync_all_ingress_routes(service_type, new_hostname):
