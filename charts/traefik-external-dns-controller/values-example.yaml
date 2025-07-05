@@ -3,7 +3,7 @@
 
 # ---
 # Dynamic Service Configuration (Recommended)
-# Basic external + internal setup
+# Basic external + internal setup with default-based selection
 controller:
   env:
     servicesConfig: |
@@ -11,7 +11,7 @@ controller:
         "external": {
           "namespace": "traefik",
           "name": "traefik-external",
-          "priority": 100,
+          "default": true,
           "annotations": {
             "traefik.io/external": "true"
           }
@@ -19,7 +19,7 @@ controller:
         "internal": {
           "namespace": "traefik",
           "name": "traefik-internal",
-          "priority": 90,
+          "default": false,
           "annotations": {
             "traefik.io/internal": "true"
           }
@@ -35,7 +35,7 @@ controller:
 #         "production": {
 #           "namespace": "traefik-prod",
 #           "name": "traefik-production",
-#           "priority": 100,
+#           "default": true,
 #           "annotations": {
 #             "traefik.io/environment": "production"
 #           }
@@ -43,7 +43,7 @@ controller:
 #         "staging": {
 #           "namespace": "traefik-staging",
 #           "name": "traefik-staging",
-#           "priority": 90,
+#           "default": false,
 #           "annotations": {
 #             "traefik.io/environment": "staging"
 #           }
@@ -51,7 +51,7 @@ controller:
 #         "development": {
 #           "namespace": "traefik-dev",
 #           "name": "traefik-dev",
-#           "priority": 80,
+#           "default": false,
 #           "annotations": {
 #             "traefik.io/environment": "development"
 #           }
@@ -67,7 +67,7 @@ controller:
 #         "us-east": {
 #           "namespace": "traefik-us-east",
 #           "name": "traefik-us-east",
-#           "priority": 100,
+#           "default": true,
 #           "annotations": {
 #             "traefik.io/region": "us-east"
 #           }
@@ -75,7 +75,7 @@ controller:
 #         "us-west": {
 #           "namespace": "traefik-us-west",
 #           "name": "traefik-us-west",
-#           "priority": 90,
+#           "default": false,
 #           "annotations": {
 #             "traefik.io/region": "us-west"
 #           }
@@ -83,7 +83,7 @@ controller:
 #         "eu-central": {
 #           "namespace": "traefik-eu",
 #           "name": "traefik-eu-central",
-#           "priority": 80,
+#           "default": false,
 #           "annotations": {
 #             "traefik.io/region": "eu-central"
 #           }
@@ -99,7 +99,7 @@ controller:
 #         "external": {
 #           "namespace": "traefik",
 #           "name": "traefik-external",
-#           "priority": 100,
+#           "default": true,
 #           "annotations": {
 #             "traefik.io/external": "true"
 #           }
@@ -107,7 +107,7 @@ controller:
 #         "internal": {
 #           "namespace": "traefik",
 #           "name": "traefik-internal",
-#           "priority": 90,
+#           "default": false,
 #           "annotations": {
 #             "traefik.io/internal": "true"
 #           }
@@ -138,7 +138,7 @@ controller:
 #         "external": {
 #           "namespace": "traefik",
 #           "name": "traefik-external",
-#           "priority": 100,
+#           "default": true,
 #           "annotations": {
 #             "traefik.io/external": "true"
 #           }
@@ -163,8 +163,7 @@ controller:
 #       release: prometheus
 
 # ---
-# Multi-replica configuration with Pod Disruption Budget
-# replicaCount: 2
-# podDisruptionBudget:
-#   enabled: true
-#   minAvailable: 1
+# Single replica configuration (default behavior)
+# Note: Controller is designed to run as single replica to avoid conflicts
+# Multiple replicas are not supported due to lack of leader election
+# replicaCount: 1  # This is enforced in the deployment template
