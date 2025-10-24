@@ -1,6 +1,8 @@
 import os
 import logging
 import warnings
+import sys
+import io
 import kopf
 import kubernetes.config
 from kubernetes.client import ApiClient, CustomObjectsApi, CoreV1Api
@@ -15,6 +17,30 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 TRAEFIK_API_GROUPS = ['traefik.containo.us', 'traefik.io']
 TRAEFIK_VERSION = 'v1alpha1'
 active_api_groups = []  # Will be populated at startup
+
+# Custom stderr filter to suppress CRD warnings
+class FilteredStderr:
+    """Wrapper for stderr that filters out CRD warning messages."""
+    def __init__(self, original_stderr):
+        self.original_stderr = original_stderr
+        self.buffer = []
+        
+    def write(self, text):
+        # Filter out CRD warning messages
+        if 'Unresolved resources cannot be served' in text:
+            return
+        if 'try creating their CRDs' in text:
+            return
+        self.original_stderr.write(text)
+        
+    def flush(self):
+        self.original_stderr.flush()
+        
+    def fileno(self):
+        return self.original_stderr.fileno()
+
+# Apply stderr filter
+sys.stderr = FilteredStderr(sys.stderr)
 
 # Dynamic Service Configuration Support
 # ====================================
