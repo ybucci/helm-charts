@@ -76,6 +76,10 @@ for lib in ['kubernetes', 'urllib3', 'kopf', 'asyncio']:
     logging.getLogger(lib).propagate = False
     logging.getLogger(lib).setLevel(logging.WARNING)
 
+# 4. Suppress "Unresolved resources cannot be served" warnings
+# This allows handlers to be registered for both API groups even if only one exists
+logging.getLogger('kopf.reactor.observation').setLevel(logging.ERROR)
+
 # Cache to track last updates and health
 update_queue = Queue()
 last_updated = {}
@@ -380,12 +384,12 @@ def handle_ingressroute_event(name, namespace, body, api_group):
     else:
         logger.debug(f"IngressRoute {namespace}/{name} already correctly configured for {service_type}")
 
-@kopf.on.event('traefik.io', 'v1alpha1', 'ingressroutes', optional=True)
+@kopf.on.event('traefik.io', 'v1alpha1', 'ingressroutes')
 def on_ingressroute_event_traefik_io(name, namespace, body, **_):
     """Handle IngressRoute events for traefik.io API group."""
     handle_ingressroute_event(name, namespace, body, 'traefik.io')
 
-@kopf.on.event('traefik.containo.us', 'v1alpha1', 'ingressroutes', optional=True)
+@kopf.on.event('traefik.containo.us', 'v1alpha1', 'ingressroutes')
 def on_ingressroute_event_traefik_containo_us(name, namespace, body, **_):
     """Handle IngressRoute events for traefik.containo.us API group."""
     handle_ingressroute_event(name, namespace, body, 'traefik.containo.us')
