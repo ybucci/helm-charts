@@ -307,6 +307,9 @@ def update_ingress_route(name, namespace, hostname, service_type):
             # Build annotations
             annotations = current.get('metadata', {}).get('annotations', {})
             annotations['external-dns.alpha.kubernetes.io/target'] = hostname
+            # Add cloudflare-proxied annotation if it doesn't exist
+            if 'external-dns.alpha.kubernetes.io/cloudflare-proxied' not in annotations:
+                annotations['external-dns.alpha.kubernetes.io/cloudflare-proxied'] = 'true'
             # Note: Do not add traefik.io/load-balancer-type to avoid overriding explicit configurations
             
             patch = {
@@ -399,6 +402,7 @@ def handle_ingressroute_event(name, namespace, body, api_group):
     annotations = body['metadata'].get('annotations', {})
     current_target = annotations.get('external-dns.alpha.kubernetes.io/target')
     current_type = annotations.get('traefik.io/load-balancer-type')
+    current_cloudflare_proxied = annotations.get('external-dns.alpha.kubernetes.io/cloudflare-proxied')
     
     # Determine if update is actually needed
     needs_update = False
@@ -408,6 +412,11 @@ def handle_ingressroute_event(name, namespace, body, api_group):
     if current_target != hostname:
         needs_update = True
         update_reason = f"hostname mismatch (current: {current_target}, expected: {hostname})"
+    
+    # Check if cloudflare-proxied annotation is missing
+    elif current_cloudflare_proxied is None:
+        needs_update = True
+        update_reason = "cloudflare-proxied annotation missing"
     
     # Only check load-balancer-type if it's explicitly set and different
     elif current_type is not None and current_type != service_type:
@@ -561,6 +570,52 @@ def start_health_server():
     logger.info("Starting health check server on port 8080")
     server.serve_forever()
 
+def sync_all_existing_ingress_routes():
+    """Sync all existing IngressRoutes on startup to ensure all annotations are present."""
+    logger.info("Starting initial sync of all existing IngressRoutes...")
+    api = CustomObjectsApi()
+    total_synced = 0
+    
+    for group in active_api_groups:
+        try:
+            ingress_routes = api.list_cluster_custom_object(
+                group=group,
+                version=TRAEFIK_VERSION,
+                plural="ingressroutes"
+            )
+            
+            for item in ingress_routes.get('items', []):
+                name = item['metadata']['name']
+                namespace = item['metadata']['namespace']
+                
+                # Determine which service type this IngressRoute should use
+                service_type = determine_service_type(item)
+                if not service_type:
+                    continue
+                
+                # Get hostname for the service type
+                hostname = get_lb_hostname(service_type)
+                if not hostname:
+                    continue
+                
+                # Check if cloudflare-proxied annotation is missing
+                annotations = item['metadata'].get('annotations', {})
+                cloudflare_proxied = annotations.get('external-dns.alpha.kubernetes.io/cloudflare-proxied')
+                current_target = annotations.get('external-dns.alpha.kubernetes.io/target')
+                
+                # Update if annotation is missing or hostname doesn't match
+                if cloudflare_proxied is None or current_target != hostname:
+                    logger.info(f"Initial sync: updating IngressRoute {namespace}/{name} ({service_type})")
+                    if update_ingress_route(name, namespace, hostname, service_type):
+                        total_synced += 1
+                        
+        except Exception as e:
+            logger.error(f"Error during initial sync with API group {group}: {str(e)}")
+            continue
+    
+    logger.info(f"Initial sync completed: {total_synced} IngressRoutes updated")
+    update_health()
+
 @kopf.on.startup()
 def start_service_watch(**_):
     logger.info("Starting service watch in background thread")
@@ -570,6 +625,11 @@ def start_service_watch(**_):
     logger.info("Starting health check server in background thread")
     health_thread = threading.Thread(target=start_health_server, daemon=True)
     health_thread.start()
+    
+    # Perform initial sync of all IngressRoutes in background
+    logger.info("Starting initial sync in background thread")
+    sync_thread = threading.Thread(target=sync_all_existing_ingress_routes, daemon=True)
+    sync_thread.start()
 
 def main():
     """Main entry point for the controller."""
