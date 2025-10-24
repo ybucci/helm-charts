@@ -21,8 +21,12 @@ rules:
 - apiGroups: [""]
   resources: ["services"]
   verbs: ["get", "list", "watch"]
-# IngressRoute permissions
+# IngressRoute permissions (traefik.io)
 - apiGroups: ["traefik.io"]
+  resources: ["ingressroutes"]
+  verbs: ["get", "list", "watch", "patch", "update"]
+# IngressRoute permissions (traefik.containo.us - legacy API group)
+- apiGroups: ["traefik.containo.us"]
   resources: ["ingressroutes"]
   verbs: ["get", "list", "watch", "patch", "update"]
 # Events permissions for logging
