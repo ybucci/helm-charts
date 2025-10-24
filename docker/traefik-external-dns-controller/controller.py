@@ -70,15 +70,26 @@ handler = logging.StreamHandler()
 handler.setFormatter(SimpleFormatter(datefmt='%Y-%m-%d %H:%M:%S'))
 logger.addHandler(handler)
 
-# 3. Silence other loggers
+# 3. Custom filter to suppress specific CRD warnings
+class SuppressCRDWarnings(logging.Filter):
+    """Filter to suppress 'Unresolved resources cannot be served' warnings."""
+    def filter(self, record):
+        message = record.getMessage()
+        # Suppress CRD warnings for API groups we're handling dynamically
+        if 'Unresolved resources cannot be served' in message:
+            return False
+        return True
+
+# 4. Silence other loggers and apply custom filter
 for lib in ['kubernetes', 'urllib3', 'kopf', 'asyncio']:
     logging.getLogger(lib).handlers = []
     logging.getLogger(lib).propagate = False
     logging.getLogger(lib).setLevel(logging.WARNING)
 
-# 4. Suppress "Unresolved resources cannot be served" warnings
-# This allows handlers to be registered for both API groups even if only one exists
-logging.getLogger('kopf.reactor.observation').setLevel(logging.ERROR)
+# Apply custom filter to root logger to catch all CRD warnings
+logging.root.addFilter(SuppressCRDWarnings())
+# Also apply to kopf's observation logger specifically
+logging.getLogger('kopf.reactor.observation').addFilter(SuppressCRDWarnings())
 
 # Cache to track last updates and health
 update_queue = Queue()
