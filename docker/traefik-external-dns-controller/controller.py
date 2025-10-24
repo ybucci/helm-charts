@@ -380,12 +380,12 @@ def handle_ingressroute_event(name, namespace, body, api_group):
     else:
         logger.debug(f"IngressRoute {namespace}/{name} already correctly configured for {service_type}")
 
-@kopf.on.event('traefik.io', 'v1alpha1', 'ingressroutes')
+@kopf.on.event('traefik.io', 'v1alpha1', 'ingressroutes', optional=True)
 def on_ingressroute_event_traefik_io(name, namespace, body, **_):
     """Handle IngressRoute events for traefik.io API group."""
     handle_ingressroute_event(name, namespace, body, 'traefik.io')
 
-@kopf.on.event('traefik.containo.us', 'v1alpha1', 'ingressroutes')
+@kopf.on.event('traefik.containo.us', 'v1alpha1', 'ingressroutes', optional=True)
 def on_ingressroute_event_traefik_containo_us(name, namespace, body, **_):
     """Handle IngressRoute events for traefik.containo.us API group."""
     handle_ingressroute_event(name, namespace, body, 'traefik.containo.us')
