@@ -11,6 +11,11 @@ import json
 from queue import Queue
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
+# Supported Traefik API groups (old and new)
+TRAEFIK_API_GROUPS = ['traefik.containo.us', 'traefik.io']
+TRAEFIK_VERSION = 'v1alpha1'
+active_api_groups = []  # Will be populated at startup
+
 # Dynamic Service Configuration Support
 # ====================================
 # This controller supports dynamic service configuration through the SERVICES_CONFIG environment variable.
@@ -86,6 +91,33 @@ def update_health():
     last_healthy_time = time.time()
     logger.debug("Health timestamp updated")
 
+def detect_traefik_api_groups():
+    """Detect which Traefik API groups are available in the cluster."""
+    global active_api_groups
+    active_api_groups = []
+    
+    api = CustomObjectsApi()
+    for group in TRAEFIK_API_GROUPS:
+        try:
+            # Try to list IngressRoutes with this API group
+            api.list_cluster_custom_object(
+                group=group,
+                version=TRAEFIK_VERSION,
+                plural="ingressroutes",
+                limit=1
+            )
+            active_api_groups.append(group)
+            logger.info(f"Detected Traefik API group: {group}/{TRAEFIK_VERSION}")
+        except Exception as e:
+            logger.debug(f"API group {group}/{TRAEFIK_VERSION} not available: {str(e)}")
+    
+    if not active_api_groups:
+        logger.error(f"No Traefik API groups detected! Make sure Traefik CRDs are installed.")
+    else:
+        logger.info(f"Active Traefik API groups: {', '.join(active_api_groups)}")
+    
+    return active_api_groups
+
 def parse_service_config():
     """Parse service configuration from environment variables."""
     configs = {}
@@ -125,6 +157,20 @@ def configure(settings: kopf.OperatorSettings, **_):
     settings.watching.server_timeout = 60
     settings.watching.reconnect_backoff = 1.0
     
+    try:
+        kubernetes.config.load_incluster_config()
+        logger.info("In-cluster configuration loaded")
+    except kubernetes.config.ConfigException:
+        kubernetes.config.load_kube_config()
+        logger.info("Local configuration (kubeconfig) loaded")
+    
+    # Detect available Traefik API groups
+    detect_traefik_api_groups()
+    
+    if not active_api_groups:
+        logger.error("No Traefik API groups available! Cannot proceed.")
+        return
+    
     # Parse service configurations
     service_configs = parse_service_config()
     
@@ -135,12 +181,6 @@ def configure(settings: kopf.OperatorSettings, **_):
     logger.info("Controller started successfully | Monitoring services: %s", 
                 ", ".join([f"{k}={v['namespace']}/{v['name']}" for k, v in service_configs.items()]))
     
-    try:
-        kubernetes.config.load_incluster_config()
-        logger.info("In-cluster configuration loaded")
-    except kubernetes.config.ConfigException:
-        kubernetes.config.load_kube_config()
-        logger.info("Local configuration (kubeconfig) loaded")
     update_health()
 
 def get_lb_hostname(service_type):
@@ -204,89 +244,103 @@ def determine_service_type(ingress_route):
 
 def update_ingress_route(name, namespace, hostname, service_type):
     """Update IngressRoute with hostname and service type information."""
-    try:
-        api = CustomObjectsApi()
-        current = api.get_namespaced_custom_object(
-            group="traefik.io",
-            version="v1alpha1",
-            namespace=namespace,
-            plural="ingressroutes",
-            name=name
-        )
-        
-        resource_key = f"{namespace}/{name}"
-        current_time = time.time()
-        if resource_key in last_updated and (current_time - last_updated[resource_key]) < 5:
-            logger.debug(f"Ignoring redundant update for {resource_key}")
-            return False
-        
-        # Build annotations
-        annotations = current.get('metadata', {}).get('annotations', {})
-        annotations['external-dns.alpha.kubernetes.io/target'] = hostname
-        # Note: Do not add traefik.io/load-balancer-type to avoid overriding explicit configurations
-        
-        patch = {
-            'metadata': {
-                'annotations': annotations
+    api = CustomObjectsApi()
+    
+    # Try each active API group until one succeeds
+    for group in active_api_groups:
+        try:
+            current = api.get_namespaced_custom_object(
+                group=group,
+                version=TRAEFIK_VERSION,
+                namespace=namespace,
+                plural="ingressroutes",
+                name=name
+            )
+            
+            resource_key = f"{namespace}/{name}"
+            current_time = time.time()
+            if resource_key in last_updated and (current_time - last_updated[resource_key]) < 5:
+                logger.debug(f"Ignoring redundant update for {resource_key}")
+                return False
+            
+            # Build annotations
+            annotations = current.get('metadata', {}).get('annotations', {})
+            annotations['external-dns.alpha.kubernetes.io/target'] = hostname
+            # Note: Do not add traefik.io/load-balancer-type to avoid overriding explicit configurations
+            
+            patch = {
+                'metadata': {
+                    'annotations': annotations
+                }
             }
-        }
-        
-        response = api.patch_namespaced_custom_object(
-            group="traefik.io",
-            version="v1alpha1",
-            namespace=namespace,
-            plural="ingressroutes",
-            name=name,
-            body=patch
-        )
-        
-        last_updated[resource_key] = current_time
-        logger.info(f"IngressRoute {namespace}/{name} updated with {service_type} hostname: {hostname}")
-        update_health()
-        return True
-    except Exception as e:
-        # Check if it's a 404 error (resource not found) - silently ignore
-        error_str = str(e)
-        if not ("Not Found" in error_str or "not found" in error_str or 
-                "404" in error_str or "(404)" in error_str):
-            logger.error(f"Failed to update IngressRoute {namespace}/{name}: {error_str}")
-        return False
+            
+            response = api.patch_namespaced_custom_object(
+                group=group,
+                version=TRAEFIK_VERSION,
+                namespace=namespace,
+                plural="ingressroutes",
+                name=name,
+                body=patch
+            )
+            
+            last_updated[resource_key] = current_time
+            logger.info(f"IngressRoute {namespace}/{name} updated with {service_type} hostname: {hostname} (API group: {group})")
+            update_health()
+            return True
+        except Exception as e:
+            error_str = str(e)
+            # Check if it's a 404 error (resource not found) - try next API group or silently ignore
+            if "Not Found" in error_str or "not found" in error_str or "404" in error_str or "(404)" in error_str:
+                continue  # Try next API group
+            else:
+                logger.error(f"Failed to update IngressRoute {namespace}/{name} with API group {group}: {error_str}")
+                continue  # Try next API group
+    
+    # If we get here, all API groups failed
+    return False
 
 def sync_all_ingress_routes(service_type, new_hostname):
     """Sync all IngressRoutes of a specific service type with the new hostname."""
     api = CustomObjectsApi()
-    try:
-        ingress_routes = api.list_cluster_custom_object(
-            group="traefik.io",
-            version="v1alpha1",
-            plural="ingressroutes"
-        )
-        
-        updated_count = 0
-        for item in ingress_routes.get('items', []):
-            name = item['metadata']['name']
-            namespace = item['metadata']['namespace']
+    updated_count = 0
+    
+    # Try each active API group
+    for group in active_api_groups:
+        try:
+            ingress_routes = api.list_cluster_custom_object(
+                group=group,
+                version=TRAEFIK_VERSION,
+                plural="ingressroutes"
+            )
             
-            # Determine if this IngressRoute should use this service type
-            determined_type = determine_service_type(item)
-            if determined_type != service_type:
-                continue
+            for item in ingress_routes.get('items', []):
+                name = item['metadata']['name']
+                namespace = item['metadata']['namespace']
                 
-            current_target = item['metadata'].get('annotations', {}).get('external-dns.alpha.kubernetes.io/target')
-            if current_target != new_hostname:
-                logger.info(f"Updating via sync IngressRoute {namespace}/{name} ({service_type}) from {current_target} to {new_hostname}")
-                if update_ingress_route(name, namespace, new_hostname, service_type):
-                    updated_count += 1
-        
-        logger.info(f"Synchronized {updated_count} IngressRoutes for {service_type} LoadBalancer")
-    except Exception as e:
-        logger.error(f"Failed to sync IngressRoutes for {service_type}: {str(e)}")
+                # Determine if this IngressRoute should use this service type
+                determined_type = determine_service_type(item)
+                if determined_type != service_type:
+                    continue
+                    
+                current_target = item['metadata'].get('annotations', {}).get('external-dns.alpha.kubernetes.io/target')
+                if current_target != new_hostname:
+                    logger.info(f"Updating via sync IngressRoute {namespace}/{name} ({service_type}) from {current_target} to {new_hostname}")
+                    if update_ingress_route(name, namespace, new_hostname, service_type):
+                        updated_count += 1
+        except Exception as e:
+            logger.error(f"Failed to sync IngressRoutes for {service_type} with API group {group}: {str(e)}")
+            continue
+    
+    logger.info(f"Synchronized {updated_count} IngressRoutes for {service_type} LoadBalancer")
     update_health()
 
-@kopf.on.event('traefik.io', 'v1alpha1', 'ingressroutes')
-def on_ingressroute_event(name, namespace, body, **_):
-    """Handle IngressRoute events."""
-    logger.debug(f"Event received for IngressRoute: {namespace}/{name}")
+def handle_ingressroute_event(name, namespace, body, api_group):
+    """Handle IngressRoute events (common logic for all API groups)."""
+    # Skip if this API group is not active
+    if api_group not in active_api_groups:
+        return
+    
+    logger.debug(f"Event received for IngressRoute: {namespace}/{name} (API group: {api_group})")
     
     # Determine which service type this IngressRoute should use
     service_type = determine_service_type(body)
@@ -325,6 +379,16 @@ def on_ingressroute_event(name, namespace, body, **_):
         update_ingress_route(name, namespace, hostname, service_type)
     else:
         logger.debug(f"IngressRoute {namespace}/{name} already correctly configured for {service_type}")
+
+@kopf.on.event('traefik.io', 'v1alpha1', 'ingressroutes')
+def on_ingressroute_event_traefik_io(name, namespace, body, **_):
+    """Handle IngressRoute events for traefik.io API group."""
+    handle_ingressroute_event(name, namespace, body, 'traefik.io')
+
+@kopf.on.event('traefik.containo.us', 'v1alpha1', 'ingressroutes')
+def on_ingressroute_event_traefik_containo_us(name, namespace, body, **_):
+    """Handle IngressRoute events for traefik.containo.us API group."""
+    handle_ingressroute_event(name, namespace, body, 'traefik.containo.us')
 
 def watch_service():
     """Watch multiple services for changes in real-time."""
