@@ -7,7 +7,7 @@ controller:
   image:
     repository: ybucci/traefik-external-dns-controller
     pullPolicy: IfNotPresent
-    tag: "2.1.1"
+    tag: "2.1.2"
 
   # Environment variables
   env:

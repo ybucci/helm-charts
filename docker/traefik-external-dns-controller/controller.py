@@ -224,20 +224,30 @@ def configure(settings: kopf.OperatorSettings, **_):
     
     update_health()
 
+def format_lb_targets(ingress_list):
+    """Join every hostname/IP in a LoadBalancer ingress list into a comma-separated
+    target string. external-dns natively supports comma-separated targets to create
+    multiple A/CNAME records, which is what we need once a Service has more than one
+    LoadBalancer entry (e.g. one per node in a multi-node cluster)."""
+    if not ingress_list:
+        return None
+    targets = [ing.hostname or ing.ip for ing in ingress_list if (ing.hostname or ing.ip)]
+    return ','.join(targets) if targets else None
+
 def get_lb_hostname(service_type):
-    """Get hostname for a specific service type."""
+    """Get hostname(s) for a specific service type."""
     if service_type not in service_configs:
         logger.error(f"Service type '{service_type}' not configured")
         return None
-    
+
     try:
         config = service_configs[service_type]
         svc = CoreV1Api().read_namespaced_service(
-            name=config['name'], 
+            name=config['name'],
             namespace=config['namespace']
         )
         if svc.status.load_balancer.ingress:
-            hostname = svc.status.load_balancer.ingress[0].hostname or svc.status.load_balancer.ingress[0].ip
+            hostname = format_lb_targets(svc.status.load_balancer.ingress)
             logger.debug(f"Load balancer hostname obtained for {service_type}: {hostname}")
             return hostname
     except Exception as e:
@@ -459,7 +469,7 @@ def watch_service():
                 namespace=config['namespace']
             )
             if svc.status and svc.status.load_balancer and svc.status.load_balancer.ingress:
-                hostname = svc.status.load_balancer.ingress[0].hostname or svc.status.load_balancer.ingress[0].ip
+                hostname = format_lb_targets(svc.status.load_balancer.ingress)
                 service_hostnames[service_type] = hostname
                 logger.info(f"Initialized {service_type} service hostname: {hostname}")
             else:
@@ -520,7 +530,7 @@ def watch_single_service(service_type, config, v1_client):
                 logger.debug(f"Service event received: {event_type} for {service_type} service {ns}/{name}")
 
                 if svc.status and svc.status.load_balancer and svc.status.load_balancer.ingress:
-                    hostname = svc.status.load_balancer.ingress[0].hostname or svc.status.load_balancer.ingress[0].ip
+                    hostname = format_lb_targets(svc.status.load_balancer.ingress)
                     current_hostname = service_hostnames.get(service_type)
                     
                     if hostname != current_hostname:
