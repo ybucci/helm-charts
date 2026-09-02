@@ -1,6 +1,6 @@
 # Traefik External DNS Controller Helm Chart
 
-This Helm chart deploys the Traefik External DNS Controller, which monitors multiple Traefik LoadBalancer services and automatically updates `external-dns.alpha.kubernetes.io/target` annotations on IngressRoute resources based on dynamic service configurations.
+This Helm chart deploys the Traefik External DNS Controller, which monitors multiple Traefik LoadBalancer services and automatically updates `external-dns.alpha.kubernetes.io/target` annotations on IngressRoute, IngressRouteTCP and IngressRouteUDP resources based on dynamic service configurations.
 
 ## Features
 
@@ -243,6 +243,46 @@ spec:
           port: 80
 ```
 
+### TCP and UDP Routes
+
+The controller also watches `IngressRouteTCP` and `IngressRouteUDP` resources. Service
+selection works exactly as it does for `IngressRoute` (the `traefik.io/load-balancer-type`
+annotation or annotation matching), with two differences:
+
+1. **The hostname annotation is mandatory.** `IngressRouteTCP` matches on `HostSNI`, and with
+   `HostSNI(`*`)` — which is what protocols like PostgreSQL require, since StartTLS sends no
+   SNI — there is no hostname to derive. `IngressRouteUDP` has no host matcher at all. So the
+   controller only touches a TCP/UDP route that carries
+   `external-dns.alpha.kubernetes.io/hostname`; routes without it are skipped.
+2. **No `cloudflare-proxied` annotation is added.** The Cloudflare proxy only applies to
+   HTTP/HTTPS, so that annotation is written for `IngressRoute` resources only.
+
+Routing for `HostSNI(`*`)` services is done by entrypoint/port, so each route needs its own
+TCP entrypoint on the Traefik service.
+
+```yaml
+apiVersion: traefik.io/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: pg-fintech
+  namespace: databases
+  annotations:
+    traefik.io/load-balancer-type: "internal"
+    external-dns.alpha.kubernetes.io/hostname: db-fintech.dev.internal
+spec:
+  entryPoints:
+    - pg-slot-3
+  routes:
+    - match: HostSNI(`*`)
+      services:
+        - name: fintech
+          port: 5432
+```
+
+The controller then writes `external-dns.alpha.kubernetes.io/target` with the LoadBalancer
+address of the selected service, which is what the external-dns `traefik-proxy` source needs
+— the Traefik CRDs carry no `status.loadBalancer` to read the address from.
+
 ## Advanced Examples
 
 ### Multi-Environment Setup
@@ -354,7 +394,7 @@ spec:
 The controller requires the following Kubernetes permissions:
 
 - **Services**: `get`, `list`, `watch` - To monitor LoadBalancer services
-- **IngressRoutes**: `get`, `list`, `watch`, `patch`, `update` - To update external-dns annotations
+- **IngressRoutes / IngressRouteTCPs / IngressRouteUDPs**: `get`, `list`, `watch`, `patch`, `update` - To update external-dns annotations
 - **Events**: `create`, `patch` - For logging events
 - **Secrets**: `get`, `list`, `watch`, `create`, `update`, `patch` - For Kopf framework state
 - **Leases**: `get`, `list`, `watch`, `create`, `update`, `patch` - For Kopf coordination

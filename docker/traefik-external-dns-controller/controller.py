@@ -16,7 +16,28 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 # Supported Traefik API groups (old and new)
 TRAEFIK_API_GROUPS = ['traefik.containo.us', 'traefik.io']
 TRAEFIK_VERSION = 'v1alpha1'
+
+# Traefik route kinds handled by this controller.
+# IngressRoute matches on Host(), so external-dns can usually derive the hostname
+# from the rule. IngressRouteTCP matches on HostSNI() - and with HostSNI(`*`)
+# there is no hostname at all - while IngressRouteUDP has no host matcher of any
+# kind, so both rely exclusively on the
+# external-dns.alpha.kubernetes.io/hostname annotation.
+TRAEFIK_PLURALS = ['ingressroutes', 'ingressroutetcps', 'ingressrouteudps']
+
+# Plurals that require an explicit hostname annotation to produce a DNS record.
+HOSTNAME_ANNOTATION_REQUIRED = {'ingressroutetcps', 'ingressrouteudps'}
+
+# Plurals where the Cloudflare proxy makes sense (HTTP/HTTPS only).
+CLOUDFLARE_PROXIED_PLURALS = {'ingressroutes'}
+
+HOSTNAME_ANNOTATION = 'external-dns.alpha.kubernetes.io/hostname'
+TARGET_ANNOTATION = 'external-dns.alpha.kubernetes.io/target'
+CLOUDFLARE_PROXIED_ANNOTATION = 'external-dns.alpha.kubernetes.io/cloudflare-proxied'
+
 active_api_groups = []  # Will be populated at startup
+# {api_group: [plural, ...]} - which route kinds exist per detected API group
+active_resources = {}
 
 # Custom stderr filter to suppress CRD warnings
 class FilteredStderr:
@@ -75,9 +96,14 @@ sys.stderr = FilteredStderr(sys.stderr)
 # }
 #
 # Service selection logic:
-# 1. If IngressRoute has "traefik.io/load-balancer-type" annotation, use that service directly
-# 2. If IngressRoute annotations match any service's annotation patterns, use highest priority match
+# 1. If the route has "traefik.io/load-balancer-type" annotation, use that service directly
+# 2. If the route annotations match any service's annotation patterns, use highest priority match
 # 3. Otherwise, use the service with highest priority (lowest number)
+#
+# Supported route kinds: IngressRoute, IngressRouteTCP and IngressRouteUDP.
+# TCP/UDP routes are only processed when they carry an
+# external-dns.alpha.kubernetes.io/hostname annotation, since HostSNI(`*`) (TCP) and
+# the absence of any host matcher (UDP) leave no hostname to derive.
 
 # 1. Disable warnings
 warnings.filterwarnings('ignore', module='kopf._core.reactor.running')
@@ -133,31 +159,53 @@ def update_health():
     logger.debug("Health timestamp updated")
 
 def detect_traefik_api_groups():
-    """Detect which Traefik API groups are available in the cluster."""
-    global active_api_groups
+    """Detect which Traefik API groups and route kinds are available in the cluster."""
+    global active_api_groups, active_resources
     active_api_groups = []
-    
+    active_resources = {}
+
     api = CustomObjectsApi()
     for group in TRAEFIK_API_GROUPS:
-        try:
-            # Try to list IngressRoutes with this API group
-            api.list_cluster_custom_object(
-                group=group,
-                version=TRAEFIK_VERSION,
-                plural="ingressroutes",
-                limit=1
-            )
+        available_plurals = []
+        for plural in TRAEFIK_PLURALS:
+            try:
+                api.list_cluster_custom_object(
+                    group=group,
+                    version=TRAEFIK_VERSION,
+                    plural=plural,
+                    limit=1
+                )
+                available_plurals.append(plural)
+            except Exception as e:
+                logger.debug(f"Resource {group}/{TRAEFIK_VERSION}/{plural} not available: {str(e)}")
+
+        if available_plurals:
             active_api_groups.append(group)
-            logger.info(f"Detected Traefik API group: {group}/{TRAEFIK_VERSION}")
-        except Exception as e:
-            logger.debug(f"API group {group}/{TRAEFIK_VERSION} not available: {str(e)}")
-    
+            active_resources[group] = available_plurals
+            logger.info(f"Detected Traefik API group: {group}/{TRAEFIK_VERSION} (resources: {', '.join(available_plurals)})")
+
     if not active_api_groups:
         logger.error(f"No Traefik API groups detected! Make sure Traefik CRDs are installed.")
     else:
         logger.info(f"Active Traefik API groups: {', '.join(active_api_groups)}")
-    
+
     return active_api_groups
+
+def kind_for_plural(plural):
+    """Human-readable kind name for log messages."""
+    return {
+        'ingressroutes': 'IngressRoute',
+        'ingressroutetcps': 'IngressRouteTCP',
+        'ingressrouteudps': 'IngressRouteUDP',
+    }.get(plural, plural)
+
+def is_resource_active(group, plural):
+    """Check whether a given API group serves a given route kind."""
+    return plural in active_resources.get(group, [])
+
+def groups_for_plural(plural):
+    """List the active API groups that serve a given route kind."""
+    return [group for group in active_api_groups if is_resource_active(group, plural)]
 
 def parse_service_config():
     """Parse service configuration from environment variables."""
@@ -255,7 +303,8 @@ def get_lb_hostname(service_type):
     return None
 
 def determine_service_type(ingress_route):
-    """Determine which service type to use for an IngressRoute."""
+    """Determine which service type to use for a Traefik route (IngressRoute,
+    IngressRouteTCP or IngressRouteUDP)."""
     annotations = ingress_route.get('metadata', {}).get('annotations', {})
     
     # Check for explicit load-balancer-type annotation
@@ -293,52 +342,53 @@ def determine_service_type(ingress_route):
     
     return None
 
-def update_ingress_route(name, namespace, hostname, service_type):
-    """Update IngressRoute with hostname and service type information."""
+def update_ingress_route(name, namespace, hostname, service_type, plural="ingressroutes"):
+    """Update a Traefik route with hostname and service type information."""
     api = CustomObjectsApi()
-    
+
     # Try each active API group until one succeeds
-    for group in active_api_groups:
+    for group in groups_for_plural(plural):
         try:
             current = api.get_namespaced_custom_object(
                 group=group,
                 version=TRAEFIK_VERSION,
                 namespace=namespace,
-                plural="ingressroutes",
+                plural=plural,
                 name=name
             )
-            
-            resource_key = f"{namespace}/{name}"
+
+            resource_key = f"{plural}/{namespace}/{name}"
             current_time = time.time()
             if resource_key in last_updated and (current_time - last_updated[resource_key]) < 5:
                 logger.debug(f"Ignoring redundant update for {resource_key}")
                 return False
-            
+
             # Build annotations
             annotations = current.get('metadata', {}).get('annotations', {})
-            annotations['external-dns.alpha.kubernetes.io/target'] = hostname
-            # Add cloudflare-proxied annotation if it doesn't exist
-            if 'external-dns.alpha.kubernetes.io/cloudflare-proxied' not in annotations:
-                annotations['external-dns.alpha.kubernetes.io/cloudflare-proxied'] = 'true'
+            annotations[TARGET_ANNOTATION] = hostname
+            # Add cloudflare-proxied annotation if it doesn't exist.
+            # Only meaningful for HTTP routes - Cloudflare cannot proxy raw TCP/UDP here.
+            if plural in CLOUDFLARE_PROXIED_PLURALS and CLOUDFLARE_PROXIED_ANNOTATION not in annotations:
+                annotations[CLOUDFLARE_PROXIED_ANNOTATION] = 'true'
             # Note: Do not add traefik.io/load-balancer-type to avoid overriding explicit configurations
-            
+
             patch = {
                 'metadata': {
                     'annotations': annotations
                 }
             }
-            
-            response = api.patch_namespaced_custom_object(
+
+            api.patch_namespaced_custom_object(
                 group=group,
                 version=TRAEFIK_VERSION,
                 namespace=namespace,
-                plural="ingressroutes",
+                plural=plural,
                 name=name,
                 body=patch
             )
-            
+
             last_updated[resource_key] = current_time
-            logger.info(f"IngressRoute {namespace}/{name} updated with {service_type} hostname: {hostname} (API group: {group})")
+            logger.info(f"{kind_for_plural(plural)} {namespace}/{name} updated with {service_type} hostname: {hostname} (API group: {group})")
             update_health()
             return True
         except Exception as e:
@@ -347,108 +397,147 @@ def update_ingress_route(name, namespace, hostname, service_type):
             if "Not Found" in error_str or "not found" in error_str or "404" in error_str or "(404)" in error_str:
                 continue  # Try next API group
             else:
-                logger.error(f"Failed to update IngressRoute {namespace}/{name} with API group {group}: {error_str}")
+                logger.error(f"Failed to update {kind_for_plural(plural)} {namespace}/{name} with API group {group}: {error_str}")
                 continue  # Try next API group
-    
+
     # If we get here, all API groups failed
     return False
 
+def has_required_hostname(item, plural):
+    """IngressRouteTCP matches on HostSNI (often HostSNI(`*`)) and IngressRouteUDP has
+    no host matcher at all, so external-dns has no hostname to derive from the rule.
+    For those kinds, only act when the hostname annotation is present."""
+    if plural not in HOSTNAME_ANNOTATION_REQUIRED:
+        return True
+    annotations = item.get('metadata', {}).get('annotations', {})
+    return bool(annotations.get(HOSTNAME_ANNOTATION))
+
 def sync_all_ingress_routes(service_type, new_hostname):
-    """Sync all IngressRoutes of a specific service type with the new hostname."""
+    """Sync all Traefik routes of a specific service type with the new hostname."""
     api = CustomObjectsApi()
     updated_count = 0
-    
-    # Try each active API group
+
+    # Try each active API group / route kind
     for group in active_api_groups:
-        try:
-            ingress_routes = api.list_cluster_custom_object(
-                group=group,
-                version=TRAEFIK_VERSION,
-                plural="ingressroutes"
-            )
-            
-            for item in ingress_routes.get('items', []):
-                name = item['metadata']['name']
-                namespace = item['metadata']['namespace']
-                
-                # Determine if this IngressRoute should use this service type
-                determined_type = determine_service_type(item)
-                if determined_type != service_type:
-                    continue
-                    
-                current_target = item['metadata'].get('annotations', {}).get('external-dns.alpha.kubernetes.io/target')
-                if current_target != new_hostname:
-                    logger.info(f"Updating via sync IngressRoute {namespace}/{name} ({service_type}) from {current_target} to {new_hostname}")
-                    if update_ingress_route(name, namespace, new_hostname, service_type):
-                        updated_count += 1
-        except Exception as e:
-            logger.error(f"Failed to sync IngressRoutes for {service_type} with API group {group}: {str(e)}")
-            continue
-    
-    logger.info(f"Synchronized {updated_count} IngressRoutes for {service_type} LoadBalancer")
+        for plural in active_resources.get(group, []):
+            try:
+                ingress_routes = api.list_cluster_custom_object(
+                    group=group,
+                    version=TRAEFIK_VERSION,
+                    plural=plural
+                )
+
+                for item in ingress_routes.get('items', []):
+                    name = item['metadata']['name']
+                    namespace = item['metadata']['namespace']
+
+                    # Determine if this route should use this service type
+                    determined_type = determine_service_type(item)
+                    if determined_type != service_type:
+                        continue
+
+                    if not has_required_hostname(item, plural):
+                        logger.debug(f"Skipping {kind_for_plural(plural)} {namespace}/{name}: no {HOSTNAME_ANNOTATION} annotation")
+                        continue
+
+                    current_target = item['metadata'].get('annotations', {}).get(TARGET_ANNOTATION)
+                    if current_target != new_hostname:
+                        logger.info(f"Updating via sync {kind_for_plural(plural)} {namespace}/{name} ({service_type}) from {current_target} to {new_hostname}")
+                        if update_ingress_route(name, namespace, new_hostname, service_type, plural):
+                            updated_count += 1
+            except Exception as e:
+                logger.error(f"Failed to sync {kind_for_plural(plural)} for {service_type} with API group {group}: {str(e)}")
+                continue
+
+    logger.info(f"Synchronized {updated_count} Traefik routes for {service_type} LoadBalancer")
     update_health()
 
-def handle_ingressroute_event(name, namespace, body, api_group):
-    """Handle IngressRoute events (common logic for all API groups)."""
-    # Skip if this API group is not active
-    if api_group not in active_api_groups:
+def handle_ingressroute_event(name, namespace, body, api_group, plural="ingressroutes"):
+    """Handle Traefik route events (common logic for all API groups and route kinds)."""
+    # Skip if this API group / route kind is not active
+    if not is_resource_active(api_group, plural):
         return
-    
-    logger.debug(f"Event received for IngressRoute: {namespace}/{name} (API group: {api_group})")
-    
-    # Determine which service type this IngressRoute should use
+
+    kind = kind_for_plural(plural)
+    logger.debug(f"Event received for {kind}: {namespace}/{name} (API group: {api_group})")
+
+    if not has_required_hostname(body, plural):
+        logger.debug(f"Skipping {kind} {namespace}/{name}: no {HOSTNAME_ANNOTATION} annotation")
+        return
+
+    # Determine which service type this route should use
     service_type = determine_service_type(body)
     if not service_type:
-        logger.warning(f"Could not determine service type for IngressRoute {namespace}/{name}")
+        logger.warning(f"Could not determine service type for {kind} {namespace}/{name}")
         return
-    
+
     # Get hostname for the determined service type
     hostname = get_lb_hostname(service_type)
     if not hostname:
-        logger.warning(f"No hostname available for {service_type} LoadBalancer for IngressRoute {namespace}/{name}")
+        logger.warning(f"No hostname available for {service_type} LoadBalancer for {kind} {namespace}/{name}")
         return
-    
+
     # Check current state
     annotations = body['metadata'].get('annotations', {})
-    current_target = annotations.get('external-dns.alpha.kubernetes.io/target')
+    current_target = annotations.get(TARGET_ANNOTATION)
     current_type = annotations.get('traefik.io/load-balancer-type')
-    current_cloudflare_proxied = annotations.get('external-dns.alpha.kubernetes.io/cloudflare-proxied')
-    
+    current_cloudflare_proxied = annotations.get(CLOUDFLARE_PROXIED_ANNOTATION)
+
     # Determine if update is actually needed
     needs_update = False
     update_reason = ""
-    
+
     # Check if hostname needs to be updated
     if current_target != hostname:
         needs_update = True
         update_reason = f"hostname mismatch (current: {current_target}, expected: {hostname})"
-    
-    # Check if cloudflare-proxied annotation is missing
-    elif current_cloudflare_proxied is None:
+
+    # Check if cloudflare-proxied annotation is missing (HTTP routes only)
+    elif plural in CLOUDFLARE_PROXIED_PLURALS and current_cloudflare_proxied is None:
         needs_update = True
         update_reason = "cloudflare-proxied annotation missing"
-    
+
     # Only check load-balancer-type if it's explicitly set and different
     elif current_type is not None and current_type != service_type:
         needs_update = True
         update_reason = f"explicit load-balancer-type mismatch (current: {current_type}, expected: {service_type})"
-    
+
     # Perform update only if actually needed
     if needs_update:
-        logger.info(f"Updating via event IngressRoute {namespace}/{name} with {service_type} hostname: {hostname} (reason: {update_reason})")
-        update_ingress_route(name, namespace, hostname, service_type)
+        logger.info(f"Updating via event {kind} {namespace}/{name} with {service_type} hostname: {hostname} (reason: {update_reason})")
+        update_ingress_route(name, namespace, hostname, service_type, plural)
     else:
-        logger.debug(f"IngressRoute {namespace}/{name} already correctly configured for {service_type}")
+        logger.debug(f"{kind} {namespace}/{name} already correctly configured for {service_type}")
 
 @kopf.on.event('traefik.io', 'v1alpha1', 'ingressroutes')
 def on_ingressroute_event_traefik_io(name, namespace, body, **_):
     """Handle IngressRoute events for traefik.io API group."""
-    handle_ingressroute_event(name, namespace, body, 'traefik.io')
+    handle_ingressroute_event(name, namespace, body, 'traefik.io', 'ingressroutes')
 
 @kopf.on.event('traefik.containo.us', 'v1alpha1', 'ingressroutes')
 def on_ingressroute_event_traefik_containo_us(name, namespace, body, **_):
     """Handle IngressRoute events for traefik.containo.us API group."""
-    handle_ingressroute_event(name, namespace, body, 'traefik.containo.us')
+    handle_ingressroute_event(name, namespace, body, 'traefik.containo.us', 'ingressroutes')
+
+@kopf.on.event('traefik.io', 'v1alpha1', 'ingressroutetcps')
+def on_ingressroutetcp_event_traefik_io(name, namespace, body, **_):
+    """Handle IngressRouteTCP events for traefik.io API group."""
+    handle_ingressroute_event(name, namespace, body, 'traefik.io', 'ingressroutetcps')
+
+@kopf.on.event('traefik.containo.us', 'v1alpha1', 'ingressroutetcps')
+def on_ingressroutetcp_event_traefik_containo_us(name, namespace, body, **_):
+    """Handle IngressRouteTCP events for traefik.containo.us API group."""
+    handle_ingressroute_event(name, namespace, body, 'traefik.containo.us', 'ingressroutetcps')
+
+@kopf.on.event('traefik.io', 'v1alpha1', 'ingressrouteudps')
+def on_ingressrouteudp_event_traefik_io(name, namespace, body, **_):
+    """Handle IngressRouteUDP events for traefik.io API group."""
+    handle_ingressroute_event(name, namespace, body, 'traefik.io', 'ingressrouteudps')
+
+@kopf.on.event('traefik.containo.us', 'v1alpha1', 'ingressrouteudps')
+def on_ingressrouteudp_event_traefik_containo_us(name, namespace, body, **_):
+    """Handle IngressRouteUDP events for traefik.containo.us API group."""
+    handle_ingressroute_event(name, namespace, body, 'traefik.containo.us', 'ingressrouteudps')
 
 def watch_service():
     """Watch multiple services for changes in real-time."""
@@ -582,48 +671,54 @@ def start_health_server():
 
 def sync_all_existing_ingress_routes():
     """Sync all existing IngressRoutes on startup to ensure all annotations are present."""
-    logger.info("Starting initial sync of all existing IngressRoutes...")
+    logger.info("Starting initial sync of all existing Traefik routes...")
     api = CustomObjectsApi()
     total_synced = 0
-    
+
     for group in active_api_groups:
-        try:
-            ingress_routes = api.list_cluster_custom_object(
-                group=group,
-                version=TRAEFIK_VERSION,
-                plural="ingressroutes"
-            )
-            
-            for item in ingress_routes.get('items', []):
-                name = item['metadata']['name']
-                namespace = item['metadata']['namespace']
-                
-                # Determine which service type this IngressRoute should use
-                service_type = determine_service_type(item)
-                if not service_type:
-                    continue
-                
-                # Get hostname for the service type
-                hostname = get_lb_hostname(service_type)
-                if not hostname:
-                    continue
-                
-                # Check if cloudflare-proxied annotation is missing
-                annotations = item['metadata'].get('annotations', {})
-                cloudflare_proxied = annotations.get('external-dns.alpha.kubernetes.io/cloudflare-proxied')
-                current_target = annotations.get('external-dns.alpha.kubernetes.io/target')
-                
-                # Update if annotation is missing or hostname doesn't match
-                if cloudflare_proxied is None or current_target != hostname:
-                    logger.info(f"Initial sync: updating IngressRoute {namespace}/{name} ({service_type})")
-                    if update_ingress_route(name, namespace, hostname, service_type):
-                        total_synced += 1
-                        
-        except Exception as e:
-            logger.error(f"Error during initial sync with API group {group}: {str(e)}")
-            continue
-    
-    logger.info(f"Initial sync completed: {total_synced} IngressRoutes updated")
+        for plural in active_resources.get(group, []):
+            try:
+                ingress_routes = api.list_cluster_custom_object(
+                    group=group,
+                    version=TRAEFIK_VERSION,
+                    plural=plural
+                )
+
+                for item in ingress_routes.get('items', []):
+                    name = item['metadata']['name']
+                    namespace = item['metadata']['namespace']
+
+                    if not has_required_hostname(item, plural):
+                        logger.debug(f"Initial sync: skipping {kind_for_plural(plural)} {namespace}/{name}: no {HOSTNAME_ANNOTATION} annotation")
+                        continue
+
+                    # Determine which service type this route should use
+                    service_type = determine_service_type(item)
+                    if not service_type:
+                        continue
+
+                    # Get hostname for the service type
+                    hostname = get_lb_hostname(service_type)
+                    if not hostname:
+                        continue
+
+                    # Check if cloudflare-proxied annotation is missing
+                    annotations = item['metadata'].get('annotations', {})
+                    cloudflare_proxied = annotations.get(CLOUDFLARE_PROXIED_ANNOTATION)
+                    current_target = annotations.get(TARGET_ANNOTATION)
+                    missing_proxied = plural in CLOUDFLARE_PROXIED_PLURALS and cloudflare_proxied is None
+
+                    # Update if annotation is missing or hostname doesn't match
+                    if missing_proxied or current_target != hostname:
+                        logger.info(f"Initial sync: updating {kind_for_plural(plural)} {namespace}/{name} ({service_type})")
+                        if update_ingress_route(name, namespace, hostname, service_type, plural):
+                            total_synced += 1
+
+            except Exception as e:
+                logger.error(f"Error during initial sync of {plural} with API group {group}: {str(e)}")
+                continue
+
+    logger.info(f"Initial sync completed: {total_synced} Traefik routes updated")
     update_health()
 
 @kopf.on.startup()
