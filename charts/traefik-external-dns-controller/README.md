@@ -185,6 +185,20 @@ annotations:
   traefik.io/environment: "staging" # Matches services for this environment
 ```
 
+### External-DNS Annotation Prefix
+
+The controller writes `target` (and `cloudflare-proxied`) annotations and reads `hostname`
+under a configurable prefix, set with `controller.env.externalDnsAnnotationPrefix`:
+
+| external-dns | prefix |
+|---|---|
+| older releases (default here) | `external-dns.alpha.kubernetes.io/` |
+| >= v0.20 (e.g. v0.22) | `external-dns.kubernetes.io/` |
+
+Newer external-dns releases **ignore** the `alpha` prefix, so with them the default produces
+routes with no endpoints ("No endpoints could be generated from Host ..."). Set the value to
+`external-dns.kubernetes.io/` in that case. Added in chart/app `2.3.0`.
+
 ### Example IngressRoute Configurations
 
 #### External Service (Default)

@@ -13,3 +13,4 @@ metadata:
   {{- end }}
 data:
   SERVICES_CONFIG: {{ .Values.controller.env.servicesConfig | quote }} 
+  EXTERNAL_DNS_ANNOTATION_PREFIX: {{ .Values.controller.env.externalDnsAnnotationPrefix | default "external-dns.alpha.kubernetes.io/" | quote }}

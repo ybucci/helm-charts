@@ -31,9 +31,20 @@ HOSTNAME_ANNOTATION_REQUIRED = {'ingressroutetcps', 'ingressrouteudps'}
 # Plurals where the Cloudflare proxy makes sense (HTTP/HTTPS only).
 CLOUDFLARE_PROXIED_PLURALS = {'ingressroutes'}
 
-HOSTNAME_ANNOTATION = 'external-dns.alpha.kubernetes.io/hostname'
-TARGET_ANNOTATION = 'external-dns.alpha.kubernetes.io/target'
-CLOUDFLARE_PROXIED_ANNOTATION = 'external-dns.alpha.kubernetes.io/cloudflare-proxied'
+# external-dns annotation prefix. Older external-dns releases read
+# 'external-dns.alpha.kubernetes.io/' (default here, backward compatible); newer
+# ones (>= v0.20, e.g. v0.22) only read 'external-dns.kubernetes.io/' and ignore
+# the alpha prefix. Set EXTERNAL_DNS_ANNOTATION_PREFIX to match the external-dns
+# version in use.
+EXTERNAL_DNS_ANNOTATION_PREFIX = os.getenv(
+    'EXTERNAL_DNS_ANNOTATION_PREFIX', 'external-dns.alpha.kubernetes.io/'
+).strip() or 'external-dns.alpha.kubernetes.io/'
+if not EXTERNAL_DNS_ANNOTATION_PREFIX.endswith('/'):
+    EXTERNAL_DNS_ANNOTATION_PREFIX += '/'
+
+HOSTNAME_ANNOTATION = f'{EXTERNAL_DNS_ANNOTATION_PREFIX}hostname'
+TARGET_ANNOTATION = f'{EXTERNAL_DNS_ANNOTATION_PREFIX}target'
+CLOUDFLARE_PROXIED_ANNOTATION = f'{EXTERNAL_DNS_ANNOTATION_PREFIX}cloudflare-proxied'
 
 active_api_groups = []  # Will be populated at startup
 # {api_group: [plural, ...]} - which route kinds exist per detected API group
